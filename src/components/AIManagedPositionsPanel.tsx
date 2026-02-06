@@ -97,7 +97,7 @@ export const AIManagedPositionsPanel = forwardRef<HTMLDivElement, AIManagedPosit
               index={index}
               onLeave={() => handleLeave(position.id)}
               isLeaving={leavingId === position.id}
-              currentPrice={currentPrice}
+              currentPrice={position.signal?.symbol ? getPrice(position.signal.symbol) : undefined}
             />
           ))}
         </div>

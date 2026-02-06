@@ -45,6 +45,13 @@ export function MyPositionsPanel({ symbol, currentPrice }: MyPositionsPanelProps
     return { change, changePercent };
   }, [stats.currentAsset, settings.initialAsset]);
 
+  // Calculate profit amount for a position
+  const calculateProfitAmount = (pnlPercent: number, leverage: number) => {
+    const positionValue = settings.initialAsset / 10; // Assume 10% of asset per position
+    const profitAmount = positionValue * (pnlPercent / 100);
+    return profitAmount;
+  };
+
   const handleAddPosition = async () => {
     try {
       await addPosition({

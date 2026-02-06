@@ -1,15 +1,17 @@
-import { AISignal, CoinData } from '@/types/trading';
+import { AISignal } from '@/hooks/useAISignals';
+import { CoinData } from '@/types/trading';
 import { cn } from '@/lib/utils';
-import { TrendingUp, TrendingDown, Minus, Target, Shield, Zap, Activity } from 'lucide-react';
+import { TrendingUp, TrendingDown, Minus, Target, Shield, Zap, Activity, Bot } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 interface ActionCardProps {
   coin: CoinData;
-  signal?: AISignal;
+  activeAISignal?: AISignal | null;
 }
 
-export function ActionCard({ coin, signal }: ActionCardProps) {
-  const position = signal?.position || 'HOLD';
+export function ActionCard({ coin, activeAISignal }: ActionCardProps) {
+  const hasSignal = !!activeAISignal;
+  const position = activeAISignal?.position || 'HOLD';
   
   const getPositionStyle = () => {
     switch (position) {
@@ -63,7 +65,10 @@ export function ActionCard({ coin, signal }: ActionCardProps) {
           </div>
           <div>
             <h3 className="text-2xl font-bold">{coin.symbol}/USDT</h3>
-            <p className="text-sm text-muted-foreground">AI 포지션 가이드</p>
+            <p className="text-sm text-muted-foreground flex items-center gap-1">
+              <Bot className="w-3 h-3" />
+              AI 포지션 가이드
+            </p>
           </div>
         </div>
         
@@ -94,7 +99,7 @@ export function ActionCard({ coin, signal }: ActionCardProps) {
             <span className="text-xs uppercase tracking-wider">레버리지</span>
           </div>
           <p className="font-mono text-xl font-bold text-primary">
-            {signal?.leverage || 1}x
+            {activeAISignal?.leverage || '-'}x
           </p>
         </div>
 
@@ -104,7 +109,10 @@ export function ActionCard({ coin, signal }: ActionCardProps) {
             <span className="text-xs uppercase tracking-wider">익절가 (TP)</span>
           </div>
           <p className="font-mono text-xl font-bold text-long">
-            ${signal?.targetPrice?.toLocaleString() || '-'}
+            {activeAISignal?.targetPrice 
+              ? `$${activeAISignal.targetPrice.toLocaleString()}`
+              : '-'
+            }
           </p>
         </div>
 
@@ -114,12 +122,15 @@ export function ActionCard({ coin, signal }: ActionCardProps) {
             <span className="text-xs uppercase tracking-wider">손절가 (SL)</span>
           </div>
           <p className="font-mono text-xl font-bold text-short">
-            ${signal?.stopLoss?.toLocaleString() || '-'}
+            {activeAISignal?.stopLoss 
+              ? `$${activeAISignal.stopLoss.toLocaleString()}`
+              : '-'
+            }
           </p>
         </div>
       </div>
 
-      {signal && (
+      {hasSignal && activeAISignal.evidenceReasoning && (
         <div className="mt-4 p-4 rounded-lg bg-accent/50 border border-border">
           <div className="flex items-center gap-2 mb-2">
             <div className="w-2 h-2 rounded-full bg-primary animate-pulse-glow" />
@@ -127,10 +138,21 @@ export function ActionCard({ coin, signal }: ActionCardProps) {
               AI 분석 코멘트
             </span>
             <span className="ml-auto text-xs text-muted-foreground">
-              신뢰도 {signal.confidence}%
+              신뢰도 {activeAISignal.confidence}%
             </span>
           </div>
-          <p className="text-sm leading-relaxed">{signal.message}</p>
+          <p className="text-sm leading-relaxed">{activeAISignal.evidenceReasoning}</p>
+        </div>
+      )}
+
+      {!hasSignal && (
+        <div className="mt-4 p-4 rounded-lg bg-muted/50 border border-border text-center">
+          <p className="text-sm text-muted-foreground">
+            현재 {coin.symbol}에 대한 활성 AI 시그널이 없습니다
+          </p>
+          <p className="text-xs text-muted-foreground mt-1">
+            AI가 시장을 분석 중입니다. 우측 "AI 리딩" 탭에서 새로고침을 눌러보세요.
+          </p>
         </div>
       )}
     </motion.div>

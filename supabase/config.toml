@@ -23,3 +23,6 @@ verify_jwt = false
 
 [functions.ai-leave-signal]
 verify_jwt = false
+
+[functions.ai-reset-data]
+verify_jwt = false

@@ -11,10 +11,10 @@ import { toast } from 'sonner';
 
 interface JoinSignalButtonProps {
   signal: AISignal;
-  userAsset?: number;
+  userAsset: number; // Now required, no default
 }
 
-export function JoinSignalButton({ signal, userAsset = 1000 }: JoinSignalButtonProps) {
+export function JoinSignalButton({ signal, userAsset }: JoinSignalButtonProps) {
   const { joinSignal, positions } = useAIManagedPositions();
   const [isOpen, setIsOpen] = useState(false);
   const [allocatedPercent, setAllocatedPercent] = useState(10);

@@ -9,8 +9,8 @@ import { NewsFeed } from '@/components/NewsFeed';
 import { Footer } from '@/components/Footer';
 import { PerformanceModal } from '@/components/PerformanceModal';
 import { AIMentorChat } from '@/components/AIMentorChat';
-import { MyPositionsPanel } from '@/components/MyPositionsPanel';
-import { AIPerformanceAnalysis } from '@/components/AIPerformanceAnalysis';
+import { MyPositionsTab } from '@/components/MyPositionsTab';
+import { PerformanceAnalysisTab } from '@/components/PerformanceAnalysisTab';
 import { AIAdvicePanel } from '@/components/AIAdvicePanel';
 import { useBinancePrice } from '@/hooks/useBinancePrice';
 import { useSignals } from '@/hooks/useSignals';
@@ -21,7 +21,6 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from '@/components/ui/resizable';
 import { Bot, User, BarChart3, Bell } from 'lucide-react';
-
 const Index = () => {
   const [selectedSymbol, setSelectedSymbol] = useState('BTC');
   const [isPerformanceOpen, setIsPerformanceOpen] = useState(false);
@@ -43,9 +42,10 @@ const Index = () => {
     [selectedSymbol, coins]
   );
 
-  const activeSignal = useMemo(
-    () => signals.find(s => s.symbol === selectedSymbol && s.status === 'ACTIVE'),
-    [selectedSymbol, signals]
+  // Active AI signal for selected coin
+  const activeAISignal = useMemo(
+    () => aiSignals.find(s => s.symbol === selectedSymbol && s.status === 'ACTIVE'),
+    [selectedSymbol, aiSignals]
   );
 
   const filteredAISignals = useMemo(
@@ -121,7 +121,7 @@ const Index = () => {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.1 }}
               >
-                <ActionCard coin={selectedCoin} signal={activeSignal} />
+                <ActionCard coin={selectedCoin} activeAISignal={activeAISignal} />
               </motion.div>
 
               {/* TradingView Real Chart */}
@@ -175,7 +175,7 @@ const Index = () => {
                   <div className="h-full overflow-hidden">
                     <AITimelineEnhanced 
                       signals={filteredAISignals.length > 0 ? filteredAISignals : aiSignals.slice(0, 5)} 
-                      userAsset={settings.initialAsset}
+                      userAsset={userStats.currentAsset}
                     />
                   </div>
                 </ResizablePanel>
@@ -194,19 +194,15 @@ const Index = () => {
               </ResizablePanelGroup>
             </TabsContent>
             
-            <TabsContent value="analysis" className="flex-1 overflow-y-auto m-0 p-0">
-              <div className="px-2 pb-2 pt-0">
-                <AIPerformanceAnalysis />
-              </div>
+            <TabsContent value="analysis" className="flex-1 overflow-hidden m-0 p-0">
+              <PerformanceAnalysisTab />
             </TabsContent>
             
             <TabsContent value="user" className="flex-1 overflow-hidden m-0 p-0">
-              <div className="h-full overflow-hidden">
-                <MyPositionsPanel 
-                  symbol={selectedSymbol} 
-                  currentPrice={selectedCoin?.price || 0} 
-                />
-              </div>
+              <MyPositionsTab 
+                symbol={selectedSymbol} 
+                currentPrice={selectedCoin?.price || 0} 
+              />
             </TabsContent>
           </Tabs>
         </motion.aside>

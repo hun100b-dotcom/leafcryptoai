@@ -28,11 +28,14 @@ const Index = () => {
   // Use real Binance prices
   const { coins, isConnected } = useBinancePrice();
   
-  // Use signals from database
+  // Use signals from database (legacy)
   const { signals, stats, isLoading: signalsLoading } = useSignals();
   
+  // Use new AI signals system
+  const { signals: aiSignals, stats: aiStats, advices } = useAISignals();
+  
   // User positions
-  const { positions, stats: userStats } = useUserPositions();
+  const { positions, stats: userStats, settings } = useUserPositions();
 
   const selectedCoin = useMemo(
     () => coins.find(c => c.symbol === selectedSymbol) || coins[0],

@@ -141,26 +141,41 @@ const Index = () => {
           className="w-96 border-l border-border bg-card/30 hidden xl:flex flex-col"
         >
           <Tabs defaultValue="ai" className="flex-1 flex flex-col">
-            <TabsList className="w-full grid grid-cols-2 p-1 m-2">
-              <TabsTrigger value="ai" className="flex items-center gap-2">
-                <Bot className="w-4 h-4" />
-                AI 멘토
-                <span className="text-xs text-muted-foreground">({stats.winRate}%)</span>
+            <TabsList className="w-full grid grid-cols-3 p-1 m-2">
+              <TabsTrigger value="ai" className="flex items-center gap-1 text-xs">
+                <Bot className="w-3 h-3" />
+                AI 리딩
               </TabsTrigger>
-              <TabsTrigger value="user" className="flex items-center gap-2">
-                <User className="w-4 h-4" />
+              <TabsTrigger value="analysis" className="flex items-center gap-1 text-xs">
+                <BarChart3 className="w-3 h-3" />
+                승률 분석
+              </TabsTrigger>
+              <TabsTrigger value="user" className="flex items-center gap-1 text-xs">
+                <User className="w-3 h-3" />
                 내 포지션
-                <span className="text-xs text-muted-foreground">({userStats.winRate}%)</span>
               </TabsTrigger>
             </TabsList>
             
             <TabsContent value="ai" className="flex-1 flex flex-col overflow-hidden m-0">
               <div className="flex-1 overflow-hidden">
-                <AITimeline signals={filteredSignals.length > 0 ? filteredSignals : signals.slice(0, 5)} />
+                <AITimelineEnhanced 
+                  signals={filteredAISignals.length > 0 ? filteredAISignals : aiSignals.slice(0, 5)} 
+                  userAsset={settings.initialAsset}
+                />
               </div>
-              <div className="h-[350px] border-t border-border">
-                <NewsFeed news={mockNews} events={mockEvents} />
+              <div className="h-[250px] border-t border-border overflow-y-auto">
+                <div className="p-2 border-b border-border flex items-center gap-2">
+                  <Bell className="w-4 h-4 text-primary" />
+                  <span className="text-xs font-semibold text-muted-foreground">AI 조언</span>
+                </div>
+                <div className="p-2">
+                  <AIAdvicePanel />
+                </div>
               </div>
+            </TabsContent>
+            
+            <TabsContent value="analysis" className="flex-1 overflow-y-auto m-0 p-4">
+              <AIPerformanceAnalysis />
             </TabsContent>
             
             <TabsContent value="user" className="flex-1 overflow-hidden m-0 relative">

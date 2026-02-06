@@ -87,8 +87,8 @@ export function AIPerformanceAnalysis() {
   }
 
   return (
-    <div className="space-y-6">
-      {/* Filters */}
+    <div className="space-y-4">
+      {/* Filters - Compact */}
       <div className="flex items-center gap-4">
         <div className="flex items-center gap-2">
           <Filter className="w-4 h-4 text-muted-foreground" />

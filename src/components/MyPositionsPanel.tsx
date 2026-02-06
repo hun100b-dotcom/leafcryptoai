@@ -1,12 +1,13 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   TrendingUp, TrendingDown, Plus, X, Wallet, Target, 
   CheckCircle2, XCircle, Trash2, Edit2, BarChart3, 
-  LineChart, ArrowUpRight, ArrowDownRight, Trophy
+  LineChart, ArrowUpRight, ArrowDownRight, Trophy, Bot
 } from 'lucide-react';
 import { useUserPositions, UserPosition } from '@/hooks/useUserPositions';
 import { useAISignals } from '@/hooks/useAISignals';
+import { usePositionAIComment } from '@/hooks/usePositionAIComment';
 import { cn } from '@/lib/utils';
 import { formatDistanceToNow } from 'date-fns';
 import { ko } from 'date-fns/locale';
@@ -21,9 +22,38 @@ interface MyPositionsPanelProps {
 export function MyPositionsPanel({ symbol, currentPrice }: MyPositionsPanelProps) {
   const { positions, settings, stats, addPosition, closePosition, deletePosition, updateInitialAsset } = useUserPositions();
   const { stats: aiStats } = useAISignals();
+  const { comments, updateAllComments, getComment } = usePositionAIComment();
   const [isAddingPosition, setIsAddingPosition] = useState(false);
   const [isEditingAsset, setIsEditingAsset] = useState(false);
   const [assetInput, setAssetInput] = useState(settings.initialAsset.toString());
+
+  // Generate AI comments for active positions
+  const activePositions = useMemo(() => positions.filter(p => p.status === 'ACTIVE'), [positions]);
+  const completedPositions = useMemo(() => positions.filter(p => p.status !== 'ACTIVE'), [positions]);
+
+  useEffect(() => {
+    if (activePositions.length > 0 && currentPrice > 0) {
+      const positionsWithPrice = activePositions.map(p => {
+        const posCurrentPrice = p.symbol === symbol ? currentPrice : p.entryPrice;
+        const pnl = p.position === 'LONG'
+          ? ((posCurrentPrice - p.entryPrice) / p.entryPrice) * 100 * p.leverage
+          : ((p.entryPrice - posCurrentPrice) / p.entryPrice) * 100 * p.leverage;
+        
+        return {
+          id: p.id,
+          symbol: p.symbol,
+          position: p.position,
+          entryPrice: p.entryPrice,
+          targetPrice: p.targetPrice,
+          stopLoss: p.stopLoss,
+          leverage: p.leverage,
+          currentPrice: posCurrentPrice,
+          pnlPercent: pnl,
+        };
+      });
+      updateAllComments(positionsWithPrice);
+    }
+  }, [activePositions, currentPrice, symbol, updateAllComments]);
   
   // Form state
   const [form, setForm] = useState({
@@ -35,8 +65,6 @@ export function MyPositionsPanel({ symbol, currentPrice }: MyPositionsPanelProps
     message: '',
   });
 
-  const activePositions = positions.filter(p => p.status === 'ACTIVE');
-  const completedPositions = positions.filter(p => p.status !== 'ACTIVE');
 
   // Asset change calculation
   const assetChange = useMemo(() => {
@@ -230,6 +258,7 @@ export function MyPositionsPanel({ symbol, currentPrice }: MyPositionsPanelProps
               onClose={closePosition}
               onDelete={deletePosition}
               initialAsset={settings.initialAsset}
+              aiComment={getComment(pos.id)}
             />
           ))}
 
@@ -380,18 +409,27 @@ export function MyPositionsPanel({ symbol, currentPrice }: MyPositionsPanelProps
   );
 }
 
+interface AIComment {
+  positionId: string;
+  comment: string;
+  sentiment: 'positive' | 'neutral' | 'negative' | 'urgent';
+  timestamp: Date;
+}
+
 function PositionCard({ 
   position, 
   currentPrice, 
   onClose, 
   onDelete,
-  initialAsset
+  initialAsset,
+  aiComment
 }: { 
   position: UserPosition; 
   currentPrice: number;
   onClose: (id: string, status: 'WIN' | 'LOSS', price: number) => void;
   onDelete: (id: string) => void;
   initialAsset: number;
+  aiComment?: AIComment;
 }) {
   const isActive = position.status === 'ACTIVE';
   
@@ -468,6 +506,26 @@ function PositionCard({
           <p className="font-mono text-short">${position.stopLoss.toLocaleString()}</p>
         </div>
       </div>
+
+      {/* AI Comment for active positions */}
+      {isActive && aiComment && (
+        <div className={cn(
+          "flex items-start gap-2 p-2 rounded-lg text-xs mb-2",
+          aiComment.sentiment === 'urgent' && "bg-warning/10 border border-warning/30",
+          aiComment.sentiment === 'positive' && "bg-long/10 border border-long/20",
+          aiComment.sentiment === 'negative' && "bg-short/10 border border-short/20",
+          aiComment.sentiment === 'neutral' && "bg-accent/50 border border-border"
+        )}>
+          <Bot className={cn(
+            "w-4 h-4 mt-0.5 flex-shrink-0",
+            aiComment.sentiment === 'urgent' && "text-warning",
+            aiComment.sentiment === 'positive' && "text-long",
+            aiComment.sentiment === 'negative' && "text-short",
+            aiComment.sentiment === 'neutral' && "text-primary"
+          )} />
+          <span className="text-foreground/90">{aiComment.comment}</span>
+        </div>
+      )}
 
       {isActive ? (
         <div className="flex gap-2 mt-2">

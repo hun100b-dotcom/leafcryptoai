@@ -5,3 +5,21 @@ verify_jwt = false
 
 [functions.ai-mentor]
 verify_jwt = false
+
+[functions.ai-signal-generator]
+verify_jwt = false
+
+[functions.ai-position-manager]
+verify_jwt = false
+
+[functions.ai-self-review]
+verify_jwt = false
+
+[functions.ai-auto-advisor]
+verify_jwt = false
+
+[functions.ai-join-signal]
+verify_jwt = false
+
+[functions.ai-leave-signal]
+verify_jwt = false

@@ -105,7 +105,7 @@ export function UserPositionsTab({ symbol, currentPrice }: UserPositionsTabProps
 
   if (isLoading) {
     return (
-      <div className="h-full flex items-center justify-center bg-card">
+      <div className="min-h-[240px] flex items-center justify-center bg-card">
         <Loader2 className="w-6 h-6 animate-spin text-primary" />
       </div>
     );
@@ -115,7 +115,7 @@ export function UserPositionsTab({ symbol, currentPrice }: UserPositionsTabProps
   const completedPositions = positions.filter(p => p.status !== 'ACTIVE');
 
   return (
-    <div className="h-full flex flex-col bg-card">
+    <div className="h-auto flex flex-col bg-card justify-start">
       {/* Stats Header - 패딩 없이 바로 시작 */}
       <div className="grid grid-cols-3 gap-2 p-3 border-b border-border">
         <Dialog open={isAssetOpen} onOpenChange={setIsAssetOpen}>
@@ -246,7 +246,7 @@ export function UserPositionsTab({ symbol, currentPrice }: UserPositionsTabProps
       </div>
 
       {/* Positions List */}
-      <div className="flex-1 overflow-y-auto p-3 space-y-2 scrollbar-thin">
+      <div className="overflow-y-auto p-3 space-y-2 scrollbar-thin">
         {/* Active Positions */}
         {activePositions.length > 0 && (
           <div className="space-y-2">

@@ -63,14 +63,14 @@ export function AIPerformanceTab() {
 
   if (isLoading) {
     return (
-      <div className="h-full flex items-center justify-center bg-card">
+      <div className="min-h-[240px] flex items-center justify-center bg-card">
         <Loader2 className="w-6 h-6 animate-spin text-primary" />
       </div>
     );
   }
 
   return (
-    <div className="h-full flex flex-col bg-card">
+    <div className="h-auto flex flex-col bg-card justify-start">
       {/* Stats Grid - 패딩 없이 바로 시작 */}
       <div className="grid grid-cols-2 gap-2 p-3 border-b border-border">
         <div className="p-3 rounded-lg bg-accent/50 text-center">
@@ -159,7 +159,7 @@ export function AIPerformanceTab() {
       </div>
 
       {/* Trade History */}
-      <div className="flex-1 overflow-y-auto p-3 space-y-2 scrollbar-thin">
+      <div className="overflow-y-auto p-3 space-y-2 scrollbar-thin">
         {completedSignals.length === 0 ? (
           <div className="text-center py-8 text-muted-foreground text-sm">
             완료된 거래가 없습니다

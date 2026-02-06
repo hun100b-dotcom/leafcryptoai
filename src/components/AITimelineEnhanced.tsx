@@ -1,18 +1,59 @@
+import { useState } from 'react';
 import { AISignal } from '@/hooks/useAISignals';
 import { cn } from '@/lib/utils';
 import { motion } from 'framer-motion';
-import { Bot, TrendingUp, TrendingDown, Minus, CheckCircle2, XCircle, Clock, Zap, ExternalLink } from 'lucide-react';
+import { Bot, TrendingUp, TrendingDown, Minus, CheckCircle2, XCircle, Clock, Zap, ExternalLink, RefreshCw, Loader2 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { ko } from 'date-fns/locale';
 import { JoinSignalButton } from './JoinSignalButton';
 import { Progress } from '@/components/ui/progress';
+import { Button } from '@/components/ui/button';
+import { toast } from 'sonner';
 
 interface AITimelineEnhancedProps {
   signals: AISignal[];
-  userAsset?: number;
+  userAsset: number;
 }
 
-export function AITimelineEnhanced({ signals, userAsset = 1000 }: AITimelineEnhancedProps) {
+export function AITimelineEnhanced({ signals, userAsset }: AITimelineEnhancedProps) {
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [noEntryReason, setNoEntryReason] = useState<string | null>(null);
+
+  const handleRefreshSignal = async () => {
+    setIsRefreshing(true);
+    setNoEntryReason(null);
+
+    try {
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-signal-generator`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+          },
+        }
+      );
+
+      const result = await response.json();
+
+      if (result.success && result.signal) {
+        toast.success(`새 시그널 생성: ${result.signal.symbol} ${result.signal.position}`);
+      } else if (result.message?.includes('All coins have active signals')) {
+        setNoEntryReason('현재 모든 코인에 활성 시그널이 있어 추가 포지션을 제안하지 않습니다.');
+      } else if (result.message?.includes('decided not to create')) {
+        setNoEntryReason('현재 시장 상황이 진입에 적합하지 않습니다. 변동성이 낮거나 명확한 방향성이 없어 대기를 권장합니다.');
+      } else {
+        setNoEntryReason(result.message || '현재 진입 타이밍이 좋지 않습니다. 시장 상황을 모니터링 중입니다.');
+      }
+    } catch (err) {
+      console.error('Failed to refresh signal:', err);
+      toast.error('시그널 생성에 실패했습니다');
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
+
   const getStatusIcon = (status: AISignal['status']) => {
     switch (status) {
       case 'WIN':
@@ -39,15 +80,41 @@ export function AITimelineEnhanced({ signals, userAsset = 1000 }: AITimelineEnha
 
   return (
     <div className="h-full flex flex-col">
-      <div className="p-4 border-b border-border flex items-center gap-2">
-        <div className="relative">
-          <Bot className="w-5 h-5 text-primary" />
-          <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-long animate-pulse" />
+      <div className="p-3 border-b border-border flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <div className="relative">
+            <Bot className="w-4 h-4 text-primary" />
+            <span className="absolute -top-1 -right-1 w-1.5 h-1.5 rounded-full bg-long animate-pulse" />
+          </div>
+          <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+            AI 멘토 리딩
+          </h2>
         </div>
-        <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">
-          AI 멘토 리딩
-        </h2>
+        <Button
+          size="sm"
+          variant="ghost"
+          onClick={handleRefreshSignal}
+          disabled={isRefreshing}
+          className="h-7 px-2 text-xs"
+        >
+          {isRefreshing ? (
+            <Loader2 className="w-3 h-3 animate-spin" />
+          ) : (
+            <RefreshCw className="w-3 h-3" />
+          )}
+          <span className="ml-1">새로고침</span>
+        </Button>
       </div>
+
+      {/* No Entry Reason */}
+      {noEntryReason && (
+        <div className="mx-3 mt-3 p-3 rounded-lg bg-yellow-500/10 border border-yellow-500/30 text-sm text-yellow-500">
+          <div className="flex items-start gap-2">
+            <Zap className="w-4 h-4 mt-0.5 flex-shrink-0" />
+            <p>{noEntryReason}</p>
+          </div>
+        </div>
+      )}
 
       <div className="flex-1 overflow-y-auto scrollbar-thin p-4 space-y-4">
         {signals.map((signal, index) => (

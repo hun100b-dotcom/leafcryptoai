@@ -1,14 +1,46 @@
 import { motion } from 'framer-motion';
-import { Users, MessageCircle, Newspaper, RefreshCw, ExternalLink } from 'lucide-react';
+import { Users, MessageCircle, Newspaper, RefreshCw, ExternalLink, Calendar, Clock, AlertTriangle, Zap } from 'lucide-react';
 import { useBinanceLongShortRatio } from '@/hooks/useBinanceLongShortRatio';
-import { NewsItem } from '@/types/trading';
+import { NewsItem, EventItem } from '@/types/trading';
+import { formatDistanceToNow, differenceInHours } from 'date-fns';
+import { ko } from 'date-fns/locale';
+import { cn } from '@/lib/utils';
 
 interface SentimentGaugeProps {
   symbol: string;
   news: NewsItem[];
+  events?: EventItem[];
 }
 
-export function SentimentGauge({ symbol, news }: SentimentGaugeProps) {
+// Major crypto events - hardcoded for demo, in production would come from API
+const MAJOR_EVENTS: EventItem[] = [
+  {
+    id: 'fomc-2026-02',
+    coin: 'ALL',
+    type: 'CONFERENCE',
+    title: 'FOMC 금리 결정 회의',
+    timestamp: new Date('2026-02-12T19:00:00Z'),
+    url: 'https://www.federalreserve.gov/monetarypolicy/fomccalendars.htm',
+  },
+  {
+    id: 'eth-dencun',
+    coin: 'ETH',
+    type: 'CONFERENCE',
+    title: 'Ethereum Foundation AMA',
+    timestamp: new Date('2026-02-15T14:00:00Z'),
+    url: 'https://ethereum.org',
+  },
+  {
+    id: 'btc-halving-anniversary',
+    coin: 'BTC',
+    type: 'AMA',
+    title: 'Bitcoin 2026 Conference',
+    timestamp: new Date('2026-02-20T09:00:00Z'),
+    url: 'https://b.tc/conference',
+  },
+];
+
+export function SentimentGauge({ symbol, news, events = MAJOR_EVENTS }: SentimentGaugeProps) {
   const { data: ratioData, isLoading, refetch } = useBinanceLongShortRatio(symbol);
 
   const longRatio = ratioData?.longRatio ?? 50;
@@ -19,6 +51,28 @@ export function SentimentGauge({ symbol, news }: SentimentGaugeProps) {
   const bearishCount = news.filter(n => n.sentiment === 'bearish').length;
   const totalNews = news.length || 1;
   const newsSentiment = Math.round(((bullishCount - bearishCount) / totalNews + 1) * 50);
+
+  // Filter relevant events (within 7 days)
+  const upcomingEvents = events.filter(e => {
+    const hours = differenceInHours(e.timestamp, new Date());
+    return hours > 0 && hours < 168; // Within 7 days
+  }).sort((a, b) => a.timestamp.getTime() - b.timestamp.getTime());
+
+  const getEventTypeColor = (type: EventItem['type']) => {
+    switch (type) {
+      case 'AMA': return 'bg-info/20 text-info';
+      case 'CONFERENCE': return 'bg-primary/20 text-primary';
+      case 'LISTING': return 'bg-long/20 text-long';
+      case 'UNLOCK': return 'bg-short/20 text-short';
+      default: return 'bg-muted text-muted-foreground';
+    }
+  };
+
+  const formatCountdown = (date: Date) => {
+    const hours = differenceInHours(date, new Date());
+    if (hours < 24) return `${hours}시간 후`;
+    return formatDistanceToNow(date, { addSuffix: true, locale: ko });
+  };
 
   return (
     <div className="trading-card p-6">
@@ -84,6 +138,67 @@ export function SentimentGauge({ symbol, news }: SentimentGaugeProps) {
         </p>
       </div>
 
+      {/* Major Events Section */}
+      {upcomingEvents.length > 0 && (
+        <div className="mb-6 p-4 rounded-lg bg-accent/30 border border-border">
+          <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3 flex items-center gap-2">
+            <Calendar className="w-4 h-4" />
+            주요 이벤트 & 컨퍼런스
+          </h4>
+          <div className="space-y-2">
+            {upcomingEvents.slice(0, 3).map((event) => {
+              const hours = differenceInHours(event.timestamp, new Date());
+              const isUrgent = hours < 24;
+              
+              return (
+                <motion.div
+                  key={event.id}
+                  initial={{ opacity: 0, y: 5 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className={cn(
+                    "p-3 rounded-lg border transition-all",
+                    isUrgent 
+                      ? "border-primary bg-primary/5 animate-pulse" 
+                      : "border-border bg-card/50"
+                  )}
+                >
+                  <div className="flex items-center justify-between mb-1">
+                    <span className={cn(
+                      "text-[10px] font-bold px-2 py-0.5 rounded",
+                      getEventTypeColor(event.type)
+                    )}>
+                      {event.type}
+                    </span>
+                    <span className="text-[10px] font-mono text-primary">{event.coin}</span>
+                  </div>
+                  <p className="text-sm font-medium mb-1">{event.title}</p>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                      {isUrgent && <AlertTriangle className="w-3 h-3 text-primary" />}
+                      <Clock className="w-3 h-3" />
+                      <span className={isUrgent ? "text-primary font-semibold" : ""}>
+                        {formatCountdown(event.timestamp)}
+                      </span>
+                    </div>
+                    {event.url && (
+                      <a
+                        href={event.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center gap-1 text-xs text-primary hover:underline"
+                      >
+                        <ExternalLink className="w-3 h-3" />
+                        공식 링크
+                      </a>
+                    )}
+                  </div>
+                </motion.div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
       {/* News Sentiment Based on Real Headlines */}
       <div className="space-y-4">
         <div>
@@ -112,17 +227,39 @@ export function SentimentGauge({ symbol, news }: SentimentGaugeProps) {
           </p>
           <div className="space-y-1">
             {news.slice(0, 3).map((item, idx) => (
-              <div 
+              <a 
                 key={item.id}
-                className="text-xs p-2 rounded bg-accent/30 flex items-start gap-2"
+                href={item.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-xs p-2 rounded bg-accent/30 flex items-start gap-2 hover:bg-accent/50 transition-colors group"
               >
                 <span className={`w-2 h-2 rounded-full mt-1 flex-shrink-0 ${
                   item.sentiment === 'bullish' ? 'bg-long' :
                   item.sentiment === 'bearish' ? 'bg-short' : 'bg-muted-foreground'
                 }`} />
-                <span className="line-clamp-1">{item.title}</span>
-              </div>
+                <span className="line-clamp-1 group-hover:text-primary transition-colors">{item.title}</span>
+                <ExternalLink className="w-3 h-3 flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity" />
+              </a>
             ))}
+          </div>
+        </div>
+      </div>
+
+      {/* AI Analysis Hint */}
+      <div className="mt-4 p-3 rounded-lg bg-primary/5 border border-primary/20">
+        <div className="flex items-start gap-2">
+          <Zap className="w-4 h-4 text-primary mt-0.5 flex-shrink-0" />
+          <div className="text-xs">
+            <p className="font-semibold text-primary mb-1">AI 분석 요약</p>
+            <p className="text-muted-foreground">
+              {longRatio > 60 
+                ? `롱 포지션 과열 (${longRatio.toFixed(0)}%). 단기 조정 가능성 주의.`
+                : shortRatio > 60
+                ? `숏 포지션 과열 (${shortRatio.toFixed(0)}%). 숏스퀴즈 가능성 모니터링.`
+                : '시장 균형 상태. 추세 방향 확인 후 진입 권장.'}
+              {upcomingEvents.length > 0 && ` 향후 ${upcomingEvents.length}개 주요 이벤트 예정.`}
+            </p>
           </div>
         </div>
       </div>

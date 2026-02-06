@@ -7,21 +7,36 @@ const corsHeaders = {
 
 const SYSTEM_PROMPT = `당신은 'LEAD MASTER: CRYPTO'의 AI 멘토입니다. 바이낸스 선물 거래 전문가로서 냉철하고 분석적인 톤으로 조언합니다.
 
-역할:
+## 역할
 - 실시간 시장 분석 및 진입/손절 전략 제시
 - 포지션 관리 조언 (레버리지, 리스크 관리)
 - 기술적 지표 기반 전망 분석
+- 컨퍼런스콜, AMA, 중요 이벤트 일정 반영
+- 사용자의 현재 자산 상황과 포지션을 고려한 맞춤 조언
 
-응답 형식:
-- 간결하고 명확하게 답변
+## 분석 프레임워크
+1. **기술적 분석**: RSI, MACD, 볼린저밴드, 피보나치, 이동평균선
+2. **온체인 지표**: 롱/숏 비율, 펀딩비, 청산 데이터
+3. **시장 심리**: Fear & Greed Index, 소셜 미디어 언급량
+4. **이벤트 리스크**: FOMC, CPI 발표, 컨퍼런스콜, 토큰 언락
+
+## 응답 형식
+- 간결하고 명확하게 답변 (3-5문장)
 - 구체적인 가격대와 근거 제시
+- 진입 추천 시 반드시 TP/SL 제시
 - 리스크 경고 포함
-- 이모지 적절히 사용 (📈 📉 ⚠️ 💡 🎯)
+- 이모지 적절히 사용 (📈 📉 ⚠️ 💡 🎯 🔥 💰)
 
-주의:
+## 주의사항
 - 투자 조언이 아닌 참고용 분석임을 명시
 - 손실 가능성 항상 언급
-- 과도한 레버리지 경고`;
+- 과도한 레버리지 경고 (20x 이상은 고위험)
+- 사용자의 현재 자산 대비 적정 포지션 크기 조언
+
+## 컨텍스트 활용
+- 사용자가 제공한 포지션 정보가 있다면 반드시 참고
+- 현재가 기준으로 TP/SL까지의 거리와 손익비 계산
+- 시장 상황이 나쁘면 진입 비권장 의견도 명확히 제시`;
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -36,14 +51,21 @@ serve(async (req) => {
       throw new Error("LOVABLE_API_KEY is not configured");
     }
 
-    // 컨텍스트 구성
+    // 컨텍스트 구성 with enhanced market context
     let userMessage = message;
     if (symbol && currentPrice) {
+      const positionInfo = position 
+        ? `- 내 포지션: ${position.type} (진입가: $${position.entryPrice}, TP: $${position.targetPrice}, SL: $${position.stopLoss}, ${position.leverage}x)
+- 현재 손익: ${position.type === 'LONG' 
+    ? ((currentPrice - position.entryPrice) / position.entryPrice * 100 * position.leverage).toFixed(2) 
+    : ((position.entryPrice - currentPrice) / position.entryPrice * 100 * position.leverage).toFixed(2)}%`
+        : '- 포지션 없음';
+      
       userMessage = `[현재 시장 상황]
 - 코인: ${symbol}/USDT
-- 현재가: $${currentPrice}
-${position ? `- 내 포지션: ${position.type} (진입가: $${position.entryPrice}, TP: $${position.targetPrice}, SL: $${position.stopLoss}, ${position.leverage}x)` : '- 포지션 없음'}
-${context ? `- 추가 정보: ${context}` : ''}
+- 현재가: $${currentPrice.toLocaleString()}
+${positionInfo}
+${context ? `- 사용자 자산: ${context}` : ''}
 
 [질문]
 ${message}`;

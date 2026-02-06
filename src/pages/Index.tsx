@@ -194,8 +194,10 @@ const Index = () => {
               </ResizablePanelGroup>
             </TabsContent>
             
-            <TabsContent value="analysis" className="flex-1 overflow-y-auto m-0 p-2">
-              <AIPerformanceAnalysis />
+            <TabsContent value="analysis" className="flex-1 overflow-y-auto m-0 p-0">
+              <div className="p-2">
+                <AIPerformanceAnalysis />
+              </div>
             </TabsContent>
             
             <TabsContent value="user" className="flex-1 overflow-hidden m-0 p-0">

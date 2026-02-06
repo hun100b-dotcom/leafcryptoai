@@ -4,20 +4,18 @@ import { useAISignals, AISignal } from '@/hooks/useAISignals';
 import { cn } from '@/lib/utils';
 import { 
   TrendingUp, TrendingDown, Trophy, BarChart3, 
-  RefreshCw, Trash2, CheckCircle2, XCircle, Loader2
+  RefreshCw, Trash2, CheckCircle2, XCircle, Loader2, AlertTriangle
 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { ko } from 'date-fns/locale';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
-import { supabase } from '@/integrations/supabase/client';
 
-export function PerformanceAnalysisTab() {
+export function AIPerformanceTab() {
   const { signals, stats, isLoading, refetch } = useAISignals();
   const [isResetting, setIsResetting] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
 
-  // Filter completed signals only
   const completedSignals = signals.filter(s => s.status === 'WIN' || s.status === 'LOSS');
 
   const handleRefresh = async () => {
@@ -28,7 +26,7 @@ export function PerformanceAnalysisTab() {
   };
 
   const handleReset = async () => {
-    if (!confirm('⚠️ 모든 AI 거래 기록, 함께 진입 포지션, 내 포지션을 삭제하시겠습니까?\n이 작업은 되돌릴 수 없습니다.')) {
+    if (!confirm('⚠️ 모든 AI 거래 기록, 함께 진입 포지션, 내 포지션을 삭제하시겠습니까?\n\n이 작업은 되돌릴 수 없으며 상단의 AI 승률, 누적 수익률도 함께 초기화됩니다.')) {
       return;
     }
 
@@ -42,7 +40,7 @@ export function PerformanceAnalysisTab() {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
           },
-          body: JSON.stringify({ user_id: 'anonymous-user' }),
+          body: JSON.stringify({ user_id: 'default_user' }),
         }
       );
 
@@ -51,7 +49,10 @@ export function PerformanceAnalysisTab() {
       }
 
       await refetch();
-      toast.success('모든 기록이 초기화되었습니다');
+      toast.success('모든 기록이 초기화되었습니다. AI 승률과 누적 수익률도 리셋됩니다.');
+      
+      // Force page reload to reset all stats
+      setTimeout(() => window.location.reload(), 500);
     } catch (err) {
       console.error('Reset failed:', err);
       toast.error('초기화에 실패했습니다');
@@ -62,16 +63,16 @@ export function PerformanceAnalysisTab() {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center h-full">
+      <div className="h-full flex items-center justify-center bg-card">
         <Loader2 className="w-6 h-6 animate-spin text-primary" />
       </div>
     );
   }
 
   return (
-    <div className="h-full flex flex-col">
-      {/* Stats Overview - No top padding */}
-      <div className="grid grid-cols-2 gap-2 p-3 border-b border-border bg-card/50">
+    <div className="h-full flex flex-col bg-card">
+      {/* Stats Grid - 패딩 없이 바로 시작 */}
+      <div className="grid grid-cols-2 gap-2 p-3 border-b border-border">
         <div className="p-3 rounded-lg bg-accent/50 text-center">
           <div className="flex items-center justify-center gap-1 text-muted-foreground mb-1">
             <Trophy className="w-3 h-3" />
@@ -145,8 +146,16 @@ export function PerformanceAnalysisTab() {
           ) : (
             <Trash2 className="w-4 h-4 mr-1" />
           )}
-          초기화
+          전체 초기화
         </Button>
+      </div>
+
+      {/* Reset Warning */}
+      <div className="mx-3 mt-2 p-2 rounded bg-destructive/10 border border-destructive/30">
+        <div className="flex items-start gap-2 text-xs text-destructive">
+          <AlertTriangle className="w-3 h-3 mt-0.5 flex-shrink-0" />
+          <span>전체 초기화 시 AI 승률, 누적 수익률, 함께 진입, 내 포지션이 모두 삭제됩니다.</span>
+        </div>
       </div>
 
       {/* Trade History */}

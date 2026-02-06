@@ -5,12 +5,11 @@ import { ActionCard } from '@/components/ActionCard';
 import { TradingViewChart } from '@/components/TradingViewChart';
 import { SentimentGauge } from '@/components/SentimentGauge';
 import { AITimelineEnhanced } from '@/components/AITimelineEnhanced';
-import { NewsFeed } from '@/components/NewsFeed';
 import { Footer } from '@/components/Footer';
 import { PerformanceModal } from '@/components/PerformanceModal';
 import { AIMentorChat } from '@/components/AIMentorChat';
-import { MyPositionsTab } from '@/components/MyPositionsTab';
-import { PerformanceAnalysisTab } from '@/components/PerformanceAnalysisTab';
+import { UserPositionsTab } from '@/components/UserPositionsTab';
+import { AIPerformanceTab } from '@/components/AIPerformanceTab';
 import { AIAdvicePanel } from '@/components/AIAdvicePanel';
 import { useBinancePrice } from '@/hooks/useBinancePrice';
 import { useSignals } from '@/hooks/useSignals';
@@ -21,6 +20,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from '@/components/ui/resizable';
 import { Bot, User, BarChart3, Bell } from 'lucide-react';
+
 const Index = () => {
   const [selectedSymbol, setSelectedSymbol] = useState('BTC');
   const [isPerformanceOpen, setIsPerformanceOpen] = useState(false);
@@ -154,22 +154,31 @@ const Index = () => {
           className="w-96 border-l border-border bg-card/30 hidden xl:flex flex-col"
         >
           <Tabs defaultValue="ai" className="flex-1 flex flex-col overflow-hidden">
-            <TabsList className="w-full grid grid-cols-3 p-1 m-0 rounded-none border-b border-border bg-card/60 backdrop-blur-sm">
-              <TabsTrigger value="ai" className="flex items-center gap-1 text-xs">
+            <TabsList className="w-full grid grid-cols-3 h-auto p-0 rounded-none bg-card border-b border-border">
+              <TabsTrigger 
+                value="ai" 
+                className="flex items-center gap-1 text-xs py-2.5 rounded-none data-[state=active]:bg-primary/10 data-[state=active]:text-primary border-b-2 border-transparent data-[state=active]:border-primary"
+              >
                 <Bot className="w-3 h-3" />
                 AI 리딩
               </TabsTrigger>
-              <TabsTrigger value="analysis" className="flex items-center gap-1 text-xs">
+              <TabsTrigger 
+                value="analysis" 
+                className="flex items-center gap-1 text-xs py-2.5 rounded-none data-[state=active]:bg-primary/10 data-[state=active]:text-primary border-b-2 border-transparent data-[state=active]:border-primary"
+              >
                 <BarChart3 className="w-3 h-3" />
-                승률 분석
+                AI 승률 분석
               </TabsTrigger>
-              <TabsTrigger value="user" className="flex items-center gap-1 text-xs">
+              <TabsTrigger 
+                value="user" 
+                className="flex items-center gap-1 text-xs py-2.5 rounded-none data-[state=active]:bg-primary/10 data-[state=active]:text-primary border-b-2 border-transparent data-[state=active]:border-primary"
+              >
                 <User className="w-3 h-3" />
-                내 포지션
+                나의 포지션
               </TabsTrigger>
             </TabsList>
             
-            <TabsContent value="ai" className="flex-1 flex flex-col overflow-hidden m-0">
+            <TabsContent value="ai" className="flex-1 flex flex-col overflow-hidden m-0 p-0">
               <ResizablePanelGroup direction="vertical" className="flex-1">
                 <ResizablePanel defaultSize={60} minSize={25}>
                   <div className="h-full overflow-hidden">
@@ -195,11 +204,11 @@ const Index = () => {
             </TabsContent>
             
             <TabsContent value="analysis" className="flex-1 overflow-hidden m-0 p-0">
-              <PerformanceAnalysisTab />
+              <AIPerformanceTab />
             </TabsContent>
             
             <TabsContent value="user" className="flex-1 overflow-hidden m-0 p-0">
-              <MyPositionsTab 
+              <UserPositionsTab 
                 symbol={selectedSymbol} 
                 currentPrice={selectedCoin?.price || 0} 
               />
@@ -215,6 +224,7 @@ const Index = () => {
         <AIMentorChat
           symbol={selectedSymbol}
           currentPrice={selectedCoin.price}
+          userAsset={userStats.currentAsset}
           userPosition={activeUserPosition ? {
             type: activeUserPosition.position,
             entryPrice: activeUserPosition.entryPrice,

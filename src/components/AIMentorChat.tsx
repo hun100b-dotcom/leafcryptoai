@@ -11,6 +11,7 @@ import ReactMarkdown from 'react-markdown';
 interface AIMentorChatProps {
   symbol: string;
   currentPrice: number;
+  userAsset?: number;
   userPosition?: {
     type: 'LONG' | 'SHORT';
     entryPrice: number;
@@ -22,11 +23,11 @@ interface AIMentorChatProps {
 
 const QUICK_QUESTIONS = [
   { label: '현재 진입해도 될까요?', icon: TrendingUp },
-  { label: '손절가 조정 필요할까요?', icon: TrendingDown },
-  { label: '시장 전망은 어떤가요?', icon: Zap },
+  { label: '내 포지션 어떻게 관리할까요?', icon: TrendingDown },
+  { label: '시장 전망과 주요 이벤트는?', icon: Zap },
 ];
 
-export function AIMentorChat({ symbol, currentPrice, userPosition }: AIMentorChatProps) {
+export function AIMentorChat({ symbol, currentPrice, userAsset, userPosition }: AIMentorChatProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [input, setInput] = useState('');
   const { messages, isLoading, sendMessage, clearMessages } = useAIMentor();
@@ -44,6 +45,7 @@ export function AIMentorChat({ symbol, currentPrice, userPosition }: AIMentorCha
       symbol,
       currentPrice,
       position: userPosition,
+      context: userAsset ? `현재 보유 자산: $${userAsset.toLocaleString()}` : undefined,
     });
     setInput('');
   };

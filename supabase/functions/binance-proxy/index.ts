@@ -12,9 +12,19 @@ serve(async (req) => {
   }
 
   try {
-    const url = new URL(req.url);
-    const endpoint = url.searchParams.get("endpoint");
-    const symbol = url.searchParams.get("symbol");
+    let endpoint = "";
+    let symbol = "";
+    
+    // Support both GET (query params) and POST (body)
+    if (req.method === "GET") {
+      const url = new URL(req.url);
+      endpoint = url.searchParams.get("endpoint") || "";
+      symbol = url.searchParams.get("symbol") || "BTC";
+    } else {
+      const body = await req.json().catch(() => ({}));
+      endpoint = body.endpoint || "";
+      symbol = body.symbol || "BTC";
+    }
 
     let apiUrl = "";
     

@@ -154,7 +154,7 @@ const Index = () => {
           className="w-96 border-l border-border bg-card/30 hidden xl:flex flex-col"
         >
           <Tabs defaultValue="ai" className="flex-1 flex flex-col overflow-hidden">
-            <TabsList className="w-full grid grid-cols-3 p-1 m-2">
+            <TabsList className="w-full grid grid-cols-3 p-1 m-0 rounded-none border-b border-border bg-card/60 backdrop-blur-sm">
               <TabsTrigger value="ai" className="flex items-center gap-1 text-xs">
                 <Bot className="w-3 h-3" />
                 AI 리딩
@@ -195,7 +195,7 @@ const Index = () => {
             </TabsContent>
             
             <TabsContent value="analysis" className="flex-1 overflow-y-auto m-0 p-0">
-              <div className="p-2">
+              <div className="px-2 pb-2 pt-0">
                 <AIPerformanceAnalysis />
               </div>
             </TabsContent>

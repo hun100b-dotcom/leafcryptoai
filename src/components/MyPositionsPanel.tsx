@@ -380,12 +380,14 @@ function PositionCard({
   position, 
   currentPrice, 
   onClose, 
-  onDelete 
+  onDelete,
+  initialAsset
 }: { 
   position: UserPosition; 
   currentPrice: number;
   onClose: (id: string, status: 'WIN' | 'LOSS', price: number) => void;
   onDelete: (id: string) => void;
+  initialAsset: number;
 }) {
   const isActive = position.status === 'ACTIVE';
   
@@ -405,6 +407,10 @@ function PositionCard({
       : ((position.entryPrice - currentPrice) / position.entryPrice) * 100 * position.leverage;
   }
   pnl = Math.round(pnl * 10) / 10;
+
+  // Calculate profit amount (10% of asset per position)
+  const positionValue = initialAsset / 10;
+  const profitAmount = positionValue * (pnl / 100);
 
   return (
     <div className={cn(
@@ -428,11 +434,19 @@ function PositionCard({
           <span className="font-semibold text-sm">{position.symbol}/USDT</span>
           <span className="text-xs text-muted-foreground">{position.leverage}x</span>
         </div>
-        <div className={cn(
-          "text-sm font-mono font-bold",
-          pnl >= 0 ? "text-long" : "text-short"
-        )}>
-          {pnl >= 0 ? '+' : ''}{pnl}%
+        <div className="text-right">
+          <div className={cn(
+            "text-sm font-mono font-bold",
+            pnl >= 0 ? "text-long" : "text-short"
+          )}>
+            {pnl >= 0 ? '+' : ''}{pnl}%
+          </div>
+          <div className={cn(
+            "text-xs font-mono",
+            profitAmount >= 0 ? "text-long/80" : "text-short/80"
+          )}>
+            {profitAmount >= 0 ? '+' : ''}{profitAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}$
+          </div>
         </div>
       </div>
 

@@ -21,34 +21,18 @@ export function useBinancePrice() {
   // Fetch initial prices via Edge Function (CORS proxy)
   const fetchInitialPrices = useCallback(async () => {
     try {
-      const { data, error: fnError } = await supabase.functions.invoke('binance-proxy', {
-        body: null,
-        headers: { 'Content-Type': 'application/json' },
+      const { data: tickerData, error: fnError } = await supabase.functions.invoke('binance-proxy', {
+        method: 'GET',
+        body: { endpoint: 'ticker' },
       });
       
-      // Use query params approach
-      const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/binance-proxy?endpoint=ticker`,
-        {
-          headers: {
-            'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
-          },
-        }
-      );
-      
-      if (!response.ok) throw new Error('Failed to fetch prices');
-      
-      const tickerData: Array<{
-        symbol: string;
-        lastPrice: string;
-        priceChangePercent: string;
-        volume: string;
-      }> = await response.json();
+      if (fnError) throw fnError;
+      if (!tickerData) throw new Error('No data received');
 
       const priceMap = new Map<string, CoinData>();
       
       COIN_SYMBOLS.forEach((symbol) => {
-        const ticker = tickerData.find(t => t.symbol === `${symbol}USDT`);
+        const ticker = tickerData.find((t: { symbol: string }) => t.symbol === `${symbol}USDT`);
         if (ticker) {
           priceMap.set(symbol, {
             symbol,

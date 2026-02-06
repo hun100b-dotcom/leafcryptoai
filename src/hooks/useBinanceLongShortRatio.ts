@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { supabase } from '@/integrations/supabase/client';
 
 interface LongShortRatioData {
   symbol: string;
@@ -19,20 +20,12 @@ export function useBinanceLongShortRatio(symbol: string = 'BTC') {
       setIsLoading(true);
       
       // Fetch via Edge Function (CORS proxy)
-      const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/binance-proxy?endpoint=longShortRatio&symbol=${symbol}`,
-        {
-          headers: {
-            'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
-          },
-        }
-      );
+      const { data: result, error: fnError } = await supabase.functions.invoke('binance-proxy', {
+        method: 'GET',
+        body: { endpoint: 'longShortRatio', symbol },
+      });
       
-      if (!response.ok) {
-        throw new Error('Failed to fetch long/short ratio');
-      }
-      
-      const result = await response.json();
+      if (fnError) throw fnError;
       
       if (result && result.length > 0) {
         const latestData = result[0];

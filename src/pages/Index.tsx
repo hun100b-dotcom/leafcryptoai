@@ -58,12 +58,41 @@ const Index = () => {
     [selectedSymbol, positions]
   );
 
+  const aiSignalsForPerformance = useMemo(() => {
+    return aiSignals.map((s) => ({
+      id: s.id,
+      symbol: s.symbol,
+      position: s.position,
+      entryPrice: s.entryPrice,
+      targetPrice: s.targetPrice,
+      stopLoss: s.stopLoss,
+      leverage: s.leverage,
+      timestamp: s.createdAt,
+      confidence: s.confidence,
+      status: (s.status === 'CANCELLED' ? 'PENDING' : s.status) as any,
+      message: s.evidenceReasoning ?? '',
+      closedAt: s.closedAt ?? undefined,
+      closePrice: s.closePrice ?? undefined,
+    }));
+  }, [aiSignals]);
+
+  const aiStatsForPerformance = useMemo(() => {
+    return {
+      totalSignals: aiSignalsForPerformance.length,
+      completedSignals: aiStats.totalSignals,
+      wins: aiStats.wins,
+      losses: aiStats.losses,
+      winRate: Math.round(aiStats.winRate),
+      totalPnL: Math.round(aiStats.totalPnl * 10) / 10,
+    };
+  }, [aiSignalsForPerformance, aiStats]);
+
   return (
     <div className="min-h-screen flex flex-col bg-background">
       <Header 
-        totalWinRate={stats.winRate} 
-        totalPnL={stats.totalPnL} 
-        totalSignals={stats.completedSignals}
+        totalWinRate={aiStatsForPerformance.winRate} 
+        totalPnL={aiStatsForPerformance.totalPnL} 
+        totalSignals={aiStatsForPerformance.completedSignals}
         isConnected={isConnected}
         onOpenPerformance={() => setIsPerformanceOpen(true)}
       />
@@ -204,8 +233,8 @@ const Index = () => {
           <PerformanceModal
             isOpen={isPerformanceOpen}
             onClose={() => setIsPerformanceOpen(false)}
-            signals={signals}
-            stats={stats}
+            signals={aiSignalsForPerformance}
+            stats={aiStatsForPerformance}
           />
         )}
       </AnimatePresence>

@@ -1,3 +1,4 @@
+import { forwardRef } from 'react';
 import { AISignal } from '@/types/trading';
 import { motion } from 'framer-motion';
 import { 
@@ -22,34 +23,40 @@ interface PerformanceModalProps {
   };
 }
 
-export function PerformanceModal({ isOpen, onClose, signals, stats }: PerformanceModalProps) {
-  if (!isOpen) return null;
+export const PerformanceModal = forwardRef<HTMLDivElement, PerformanceModalProps>(
+  function PerformanceModal({ isOpen, onClose, signals, stats }, ref) {
+    if (!isOpen) return null;
 
-  // Calculate statistics
-  const completedSignals = signals.filter(s => s.status === 'WIN' || s.status === 'LOSS');
-  const activeSignals = signals.filter(s => s.status === 'ACTIVE');
+    const calcPnlPercent = (signal: AISignal): number => {
+      if (signal.position === 'HOLD') return 0;
+      if (signal.status !== 'WIN' && signal.status !== 'LOSS') return 0;
 
-  // Stats by coin
-  const statsByCoin = signals.reduce((acc, signal) => {
-    if (!acc[signal.symbol]) {
-      acc[signal.symbol] = { wins: 0, losses: 0, active: 0, pnl: 0 };
-    }
-    if (signal.status === 'WIN') {
-      acc[signal.symbol].wins++;
-      const pnl = ((signal.targetPrice - signal.entryPrice) / signal.entryPrice) * 100 * signal.leverage;
-      acc[signal.symbol].pnl += pnl;
-    } else if (signal.status === 'LOSS') {
-      acc[signal.symbol].losses++;
-      const pnl = ((signal.stopLoss - signal.entryPrice) / signal.entryPrice) * 100 * signal.leverage;
-      acc[signal.symbol].pnl += pnl;
-    } else if (signal.status === 'ACTIVE') {
-      acc[signal.symbol].active++;
-    }
-    return acc;
-  }, {} as Record<string, { wins: number; losses: number; active: number; pnl: number }>);
+      const exitPrice = signal.status === 'WIN' ? signal.targetPrice : signal.stopLoss;
+      const raw = ((exitPrice - signal.entryPrice) / signal.entryPrice) * 100;
+      const directionAdjusted = signal.position === 'SHORT' ? -raw : raw;
+      return directionAdjusted * signal.leverage;
+    };
+
+    // Stats by coin
+    const statsByCoin = signals.reduce((acc, signal) => {
+      if (!acc[signal.symbol]) {
+        acc[signal.symbol] = { wins: 0, losses: 0, active: 0, pnl: 0 };
+      }
+      if (signal.status === 'WIN') {
+        acc[signal.symbol].wins++;
+        acc[signal.symbol].pnl += calcPnlPercent(signal);
+      } else if (signal.status === 'LOSS') {
+        acc[signal.symbol].losses++;
+        acc[signal.symbol].pnl += calcPnlPercent(signal);
+      } else if (signal.status === 'ACTIVE') {
+        acc[signal.symbol].active++;
+      }
+      return acc;
+    }, {} as Record<string, { wins: number; losses: number; active: number; pnl: number }>);
 
   return (
     <motion.div
+      ref={ref}
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
@@ -189,11 +196,7 @@ export function PerformanceModal({ isOpen, onClose, signals, stats }: Performanc
               </h3>
               <div className="space-y-2">
                 {signals.map(signal => {
-                  const pnl = signal.status === 'WIN'
-                    ? ((signal.targetPrice - signal.entryPrice) / signal.entryPrice) * 100 * signal.leverage
-                    : signal.status === 'LOSS'
-                    ? ((signal.stopLoss - signal.entryPrice) / signal.entryPrice) * 100 * signal.leverage
-                    : 0;
+                  const pnl = calcPnlPercent(signal);
 
                   return (
                     <div
@@ -264,4 +267,5 @@ export function PerformanceModal({ isOpen, onClose, signals, stats }: Performanc
       </motion.div>
     </motion.div>
   );
-}
+  }
+);

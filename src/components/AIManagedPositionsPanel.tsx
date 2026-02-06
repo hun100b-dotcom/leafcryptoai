@@ -1,4 +1,5 @@
 import { motion } from 'framer-motion';
+import { forwardRef, useState } from 'react';
 import { useAIManagedPositions, AIManagedPosition } from '@/hooks/useAIManagedPositions';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -9,13 +10,13 @@ import {
 import { formatDistanceToNow } from 'date-fns';
 import { ko } from 'date-fns/locale';
 import { toast } from 'sonner';
-import { useState } from 'react';
 
 interface AIManagedPositionsPanelProps {
   currentPrice?: number;
 }
 
-export function AIManagedPositionsPanel({ currentPrice }: AIManagedPositionsPanelProps) {
+export const AIManagedPositionsPanel = forwardRef<HTMLDivElement, AIManagedPositionsPanelProps>(
+  function AIManagedPositionsPanel({ currentPrice }, ref) {
   const { positions, stats, isLoading, leaveSignal } = useAIManagedPositions();
   const [leavingId, setLeavingId] = useState<string | null>(null);
 
@@ -109,7 +110,7 @@ export function AIManagedPositionsPanel({ currentPrice }: AIManagedPositionsPane
       )}
     </div>
   );
-}
+});
 
 function ManagedPositionItem({ 
   position, 

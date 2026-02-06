@@ -253,7 +253,9 @@ export function MyPositionsPanel({ symbol, currentPrice }: MyPositionsPanelProps
         </TabsContent>
 
         <TabsContent value="managed" className="flex-1 overflow-y-auto p-4 m-0">
-          <AIManagedPositionsPanel currentPrice={currentPrice} />
+          <div>
+            <AIManagedPositionsPanel currentPrice={currentPrice} />
+          </div>
         </TabsContent>
       </Tabs>
 

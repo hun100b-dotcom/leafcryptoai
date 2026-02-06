@@ -1,6 +1,7 @@
 import { motion } from 'framer-motion';
-import { forwardRef, useState } from 'react';
+import { forwardRef, useState, useMemo } from 'react';
 import { useAIManagedPositions, AIManagedPosition } from '@/hooks/useAIManagedPositions';
+import { useBinancePrices } from '@/hooks/useBinancePrices';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { 
@@ -12,13 +13,27 @@ import { ko } from 'date-fns/locale';
 import { toast } from 'sonner';
 
 interface AIManagedPositionsPanelProps {
-  currentPrice?: number;
+  // Removed currentPrice - we fetch prices per symbol now
 }
 
 export const AIManagedPositionsPanel = forwardRef<HTMLDivElement, AIManagedPositionsPanelProps>(
-  function AIManagedPositionsPanel({ currentPrice }, ref) {
+  function AIManagedPositionsPanel(_props, ref) {
   const { positions, stats, isLoading, leaveSignal } = useAIManagedPositions();
   const [leavingId, setLeavingId] = useState<string | null>(null);
+
+  // Get unique symbols from positions for price fetching
+  const symbols = useMemo(() => {
+    const uniqueSymbols = new Set<string>();
+    positions.forEach(p => {
+      if (p.signal?.symbol) {
+        uniqueSymbols.add(p.signal.symbol);
+      }
+    });
+    return Array.from(uniqueSymbols);
+  }, [positions]);
+
+  // Fetch real-time prices for all position symbols
+  const { getPrice, isLoading: pricesLoading } = useBinancePrices(symbols);
 
   const handleLeave = async (positionId: string) => {
     setLeavingId(positionId);
@@ -32,7 +47,7 @@ export const AIManagedPositionsPanel = forwardRef<HTMLDivElement, AIManagedPosit
     }
   };
 
-  if (isLoading) {
+  if (isLoading || pricesLoading) {
     return (
       <div className="flex items-center justify-center h-32">
         <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary" />
@@ -82,7 +97,7 @@ export const AIManagedPositionsPanel = forwardRef<HTMLDivElement, AIManagedPosit
               index={index}
               onLeave={() => handleLeave(position.id)}
               isLeaving={leavingId === position.id}
-              currentPrice={currentPrice}
+              currentPrice={position.signal?.symbol ? getPrice(position.signal.symbol) : undefined}
             />
           ))}
         </div>

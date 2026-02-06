@@ -22,7 +22,6 @@ export function useBinancePrice() {
   const fetchInitialPrices = useCallback(async () => {
     try {
       const { data: tickerData, error: fnError } = await supabase.functions.invoke('binance-proxy', {
-        method: 'GET',
         body: { endpoint: 'ticker' },
       });
       

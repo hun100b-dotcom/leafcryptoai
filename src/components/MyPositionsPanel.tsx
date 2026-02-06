@@ -157,7 +157,7 @@ export function MyPositionsPanel({ symbol, currentPrice }: MyPositionsPanelProps
           </div>
           <div className="p-2 rounded-lg bg-accent/50 text-center">
             <span className="text-muted-foreground">거래수</span>
-            <p className="font-bold mt-0.5">{stats.completed}</p>
+            <p className="font-bold mt-0.5">{stats.completedPositions}</p>
           </div>
           <div className="p-2 rounded-lg bg-accent/50 text-center">
             <span className="text-muted-foreground">활성</span>

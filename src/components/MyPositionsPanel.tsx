@@ -229,6 +229,7 @@ export function MyPositionsPanel({ symbol, currentPrice }: MyPositionsPanelProps
               currentPrice={currentPrice}
               onClose={closePosition}
               onDelete={deletePosition}
+              initialAsset={settings.initialAsset}
             />
           ))}
 
@@ -244,6 +245,7 @@ export function MyPositionsPanel({ symbol, currentPrice }: MyPositionsPanelProps
                   currentPrice={currentPrice}
                   onClose={closePosition}
                   onDelete={deletePosition}
+                  initialAsset={settings.initialAsset}
                 />
               ))}
             </>

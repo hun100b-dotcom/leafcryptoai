@@ -1,12 +1,14 @@
 import { motion } from 'framer-motion';
-import { Zap, TrendingUp, Activity, BarChart3 } from 'lucide-react';
+import { Zap, TrendingUp, Activity, BarChart3, Wifi, WifiOff } from 'lucide-react';
 
 interface HeaderProps {
   totalWinRate: number;
   totalPnL: number;
+  isConnected?: boolean;
+  onOpenPerformance?: () => void;
 }
 
-export function Header({ totalWinRate, totalPnL }: HeaderProps) {
+export function Header({ totalWinRate, totalPnL, isConnected = true, onOpenPerformance }: HeaderProps) {
   return (
     <header className="border-b border-border bg-card/50 backdrop-blur-sm">
       <div className="px-6 py-4 flex items-center justify-between">
@@ -31,28 +33,56 @@ export function Header({ totalWinRate, totalPnL }: HeaderProps) {
           </motion.div>
         </div>
 
-        <div className="flex items-center gap-6">
+        <div className="flex items-center gap-4">
+          {/* Connection Status */}
           <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1 }}
+            className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium ${
+              isConnected 
+                ? 'bg-long/10 text-long border border-long/30' 
+                : 'bg-short/10 text-short border border-short/30'
+            }`}
+          >
+            {isConnected ? (
+              <>
+                <Wifi className="w-3 h-3" />
+                <span>Binance Live</span>
+              </>
+            ) : (
+              <>
+                <WifiOff className="w-3 h-3" />
+                <span>Reconnecting...</span>
+              </>
+            )}
+          </motion.div>
+
+          {/* Win Rate - Clickable */}
+          <motion.button
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.2 }}
-            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-accent/50 border border-border"
+            onClick={onOpenPerformance}
+            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-accent/50 border border-border hover:bg-accent hover:border-primary/50 transition-all cursor-pointer group"
           >
-            <BarChart3 className="w-4 h-4 text-primary" />
+            <BarChart3 className="w-4 h-4 text-primary group-hover:scale-110 transition-transform" />
             <span className="text-xs text-muted-foreground">AI 승률</span>
             <span className="font-mono font-bold text-long">{totalWinRate}%</span>
-          </motion.div>
+          </motion.button>
 
-          <motion.div
+          {/* P&L - Clickable */}
+          <motion.button
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.3 }}
-            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-long/10 border border-long/30"
+            onClick={onOpenPerformance}
+            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-long/10 border border-long/30 hover:bg-long/20 hover:border-long/50 transition-all cursor-pointer group"
           >
-            <TrendingUp className="w-4 h-4 text-long" />
+            <TrendingUp className="w-4 h-4 text-long group-hover:scale-110 transition-transform" />
             <span className="text-xs text-muted-foreground">누적 수익률</span>
             <span className="font-mono font-bold text-long">+{totalPnL}%</span>
-          </motion.div>
+          </motion.button>
 
           <motion.div
             initial={{ opacity: 0, y: -10 }}

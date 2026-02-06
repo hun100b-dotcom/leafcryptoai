@@ -187,7 +187,7 @@ export function MyPositionsPanel({ symbol, currentPrice }: MyPositionsPanelProps
               </div>
             </div>
           </div>
-          {stats.winRate > aiStats.winRate && stats.completed >= 3 && (
+          {stats.winRate > aiStats.winRate && stats.completedPositions >= 3 && (
             <p className="text-xs text-long mt-2">🎉 축하합니다! AI보다 높은 승률을 기록 중입니다!</p>
           )}
         </div>

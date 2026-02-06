@@ -4,19 +4,22 @@ import { CoinList } from '@/components/CoinList';
 import { ActionCard } from '@/components/ActionCard';
 import { TradingViewChart } from '@/components/TradingViewChart';
 import { SentimentGauge } from '@/components/SentimentGauge';
-import { AITimeline } from '@/components/AITimeline';
+import { AITimelineEnhanced } from '@/components/AITimelineEnhanced';
 import { NewsFeed } from '@/components/NewsFeed';
 import { Footer } from '@/components/Footer';
 import { PerformanceModal } from '@/components/PerformanceModal';
 import { AIMentorChat } from '@/components/AIMentorChat';
 import { MyPositionsPanel } from '@/components/MyPositionsPanel';
+import { AIPerformanceAnalysis } from '@/components/AIPerformanceAnalysis';
+import { AIAdvicePanel } from '@/components/AIAdvicePanel';
 import { useBinancePrice } from '@/hooks/useBinancePrice';
 import { useSignals } from '@/hooks/useSignals';
+import { useAISignals } from '@/hooks/useAISignals';
 import { useUserPositions } from '@/hooks/useUserPositions';
 import { mockNews, mockEvents } from '@/data/mockData';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Bot, User } from 'lucide-react';
+import { Bot, User, BarChart3, Bell } from 'lucide-react';
 
 const Index = () => {
   const [selectedSymbol, setSelectedSymbol] = useState('BTC');

@@ -115,9 +115,9 @@ export function UserPositionsTab({ symbol, currentPrice }: UserPositionsTabProps
   const completedPositions = positions.filter(p => p.status !== 'ACTIVE');
 
   return (
-    <div className="h-auto flex flex-col bg-card justify-start">
+    <div className="h-fit flex flex-col bg-card justify-start">
       {/* Stats Header - 패딩 없이 바로 시작 */}
-      <div className="grid grid-cols-3 gap-2 p-3 border-b border-border">
+      <div className="m-0 grid grid-cols-3 gap-2 p-3 border-b border-border">
         <Dialog open={isAssetOpen} onOpenChange={setIsAssetOpen}>
           <DialogTrigger asChild>
             <button className="p-3 rounded-lg bg-accent/50 text-center hover:bg-accent/70 transition-colors">
@@ -139,7 +139,9 @@ export function UserPositionsTab({ symbol, currentPrice }: UserPositionsTabProps
                 onChange={(e) => setNewAsset(e.target.value)}
                 placeholder="초기 자산 (USD)"
               />
-              <Button onClick={handleUpdateAsset} className="w-full">저장</Button>
+              <Button onClick={handleUpdateAsset} className="w-full">
+                저장
+              </Button>
             </div>
           </DialogContent>
         </Dialog>
@@ -149,10 +151,12 @@ export function UserPositionsTab({ symbol, currentPrice }: UserPositionsTabProps
             <Target className="w-3 h-3" />
             <span className="text-[10px]">현재자산</span>
           </div>
-          <p className={cn(
-            "text-sm font-bold",
-            stats.currentAsset >= settings.initialAsset ? "text-long" : "text-short"
-          )}>
+          <p
+            className={cn(
+              "text-sm font-bold",
+              stats.currentAsset >= settings.initialAsset ? "text-long" : "text-short",
+            )}
+          >
             ${stats.currentAsset.toLocaleString()}
           </p>
         </div>
@@ -162,18 +166,26 @@ export function UserPositionsTab({ symbol, currentPrice }: UserPositionsTabProps
             <ShieldAlert className="w-3 h-3" />
             <span className="text-[10px]">승률</span>
           </div>
-          <p className={cn(
-            "text-sm font-bold",
-            stats.winRate >= 50 ? "text-long" : stats.winRate > 0 ? "text-short" : "text-muted-foreground"
-          )}>
+          <p
+            className={cn(
+              "text-sm font-bold",
+              stats.winRate >= 50
+                ? "text-long"
+                : stats.winRate > 0
+                  ? "text-short"
+                  : "text-muted-foreground",
+            )}
+          >
             {stats.winRate}%
           </p>
-          <p className="text-[9px] text-muted-foreground">{stats.wins}W / {stats.losses}L</p>
+          <p className="text-[9px] text-muted-foreground">
+            {stats.wins}W / {stats.losses}L
+          </p>
         </div>
       </div>
 
       {/* Action Buttons */}
-      <div className="flex gap-2 p-3 border-b border-border">
+      <div className="m-0 flex gap-2 p-3 border-b border-border">
         <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
           <DialogTrigger asChild>
             <Button size="sm" className="flex-1">
@@ -235,18 +247,24 @@ export function UserPositionsTab({ symbol, currentPrice }: UserPositionsTabProps
                 onChange={(e) => setForm({ ...form, leverage: e.target.value })}
                 placeholder="레버리지"
               />
-              <Button onClick={handleAddPosition} className="w-full">추가</Button>
+              <Button onClick={handleAddPosition} className="w-full">
+                추가
+              </Button>
             </div>
           </DialogContent>
         </Dialog>
 
         <Button size="sm" variant="outline" onClick={handleRefresh} disabled={isRefreshing}>
-          {isRefreshing ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
+          {isRefreshing ? (
+            <Loader2 className="w-4 h-4 animate-spin" />
+          ) : (
+            <RefreshCw className="w-4 h-4" />
+          )}
         </Button>
       </div>
 
       {/* Positions List */}
-      <div className="overflow-y-auto p-3 space-y-2 scrollbar-thin">
+      <div className="m-0 overflow-y-auto p-3 space-y-2 scrollbar-thin">
         {/* Active Positions */}
         {activePositions.length > 0 && (
           <div className="space-y-2">
@@ -266,7 +284,7 @@ export function UserPositionsTab({ symbol, currentPrice }: UserPositionsTabProps
 
         {/* Completed Positions */}
         {completedPositions.length > 0 && (
-          <div className="space-y-2 mt-4">
+          <div className="m-0 space-y-2">
             <p className="text-xs text-muted-foreground font-semibold">완료된 포지션</p>
             {completedPositions.slice(0, 10).map((pos, idx) => (
               <CompletedPositionCard key={pos.id} position={pos} index={idx} />

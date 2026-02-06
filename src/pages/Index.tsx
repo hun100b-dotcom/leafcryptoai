@@ -151,7 +151,7 @@ const Index = () => {
         <motion.aside
           initial={{ opacity: 0, x: 20 }}
           animate={{ opacity: 1, x: 0 }}
-          className="w-96 border-l border-border bg-card/30 hidden xl:flex flex-col overflow-y-auto scrollbar-thin"
+          className="w-96 border-l border-border bg-card/30 hidden xl:flex flex-col justify-start overflow-y-auto scrollbar-thin"
         >
           <Tabs defaultValue="ai" className="flex-1 flex flex-col justify-start">
             <TabsList className="w-full grid grid-cols-3 h-auto p-0 rounded-none bg-card border-b border-border">
@@ -203,11 +203,11 @@ const Index = () => {
               </ResizablePanelGroup>
             </TabsContent>
             
-            <TabsContent value="analysis" className="m-0 p-0">
+            <TabsContent value="analysis" className="m-0 p-0 h-fit flex-none">
               <AIPerformanceTab />
             </TabsContent>
             
-            <TabsContent value="user" className="m-0 p-0">
+            <TabsContent value="user" className="m-0 p-0 h-fit flex-none">
               <UserPositionsTab 
                 symbol={selectedSymbol} 
                 currentPrice={selectedCoin?.price || 0} 

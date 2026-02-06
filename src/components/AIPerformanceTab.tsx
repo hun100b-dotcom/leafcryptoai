@@ -70,18 +70,20 @@ export function AIPerformanceTab() {
   }
 
   return (
-    <div className="h-auto flex flex-col bg-card justify-start">
+    <div className="h-fit flex flex-col bg-card justify-start">
       {/* Stats Grid - 패딩 없이 바로 시작 */}
-      <div className="grid grid-cols-2 gap-2 p-3 border-b border-border">
+      <div className="m-0 grid grid-cols-2 gap-2 p-3 border-b border-border">
         <div className="p-3 rounded-lg bg-accent/50 text-center">
           <div className="flex items-center justify-center gap-1 text-muted-foreground mb-1">
             <Trophy className="w-3 h-3" />
             <span className="text-xs">승률</span>
           </div>
-          <p className={cn(
-            "text-xl font-bold",
-            stats.winRate >= 50 ? "text-long" : "text-short"
-          )}>
+          <p
+            className={cn(
+              "text-xl font-bold",
+              stats.winRate >= 50 ? "text-long" : "text-short",
+            )}
+          >
             {stats.winRate.toFixed(1)}%
           </p>
           <p className="text-[10px] text-muted-foreground">
@@ -94,11 +96,13 @@ export function AIPerformanceTab() {
             <TrendingUp className="w-3 h-3" />
             <span className="text-xs">총 수익률</span>
           </div>
-          <p className={cn(
-            "text-xl font-bold",
-            stats.totalPnl >= 0 ? "text-long" : "text-short"
-          )}>
-            {stats.totalPnl >= 0 ? '+' : ''}{stats.totalPnl.toFixed(1)}%
+          <p
+            className={cn(
+              "text-xl font-bold",
+              stats.totalPnl >= 0 ? "text-long" : "text-short",
+            )}
+          >
+            {stats.totalPnl >= 0 ? "+" : ""}{stats.totalPnl.toFixed(1)}%
           </p>
         </div>
 
@@ -119,7 +123,7 @@ export function AIPerformanceTab() {
       </div>
 
       {/* Action Buttons */}
-      <div className="flex gap-2 p-3 border-b border-border">
+      <div className="m-0 flex gap-2 p-3 border-b border-border">
         <Button
           size="sm"
           variant="outline"
@@ -151,7 +155,7 @@ export function AIPerformanceTab() {
       </div>
 
       {/* Reset Warning */}
-      <div className="mx-3 mt-2 p-2 rounded bg-destructive/10 border border-destructive/30">
+      <div className="m-0 p-2 rounded bg-destructive/10 border border-destructive/30">
         <div className="flex items-start gap-2 text-xs text-destructive">
           <AlertTriangle className="w-3 h-3 mt-0.5 flex-shrink-0" />
           <span>전체 초기화 시 AI 승률, 누적 수익률, 함께 진입, 내 포지션이 모두 삭제됩니다.</span>
@@ -159,7 +163,7 @@ export function AIPerformanceTab() {
       </div>
 
       {/* Trade History */}
-      <div className="overflow-y-auto p-3 space-y-2 scrollbar-thin">
+      <div className="m-0 overflow-y-auto p-3 space-y-2 scrollbar-thin">
         {completedSignals.length === 0 ? (
           <div className="text-center py-8 text-muted-foreground text-sm">
             완료된 거래가 없습니다

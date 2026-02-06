@@ -123,7 +123,7 @@ const Index = () => {
           animate={{ opacity: 1, x: 0 }}
           className="w-96 border-l border-border bg-card/30 hidden xl:flex flex-col"
         >
-          <Tabs defaultValue="ai" className="flex-1 flex flex-col">
+          <Tabs defaultValue="ai" className="flex-1 flex flex-col overflow-hidden">
             <TabsList className="w-full grid grid-cols-3 p-1 m-2">
               <TabsTrigger value="ai" className="flex items-center gap-1 text-xs">
                 <Bot className="w-3 h-3" />
@@ -140,28 +140,37 @@ const Index = () => {
             </TabsList>
             
             <TabsContent value="ai" className="flex-1 flex flex-col overflow-hidden m-0">
-              <div className="flex-1 overflow-hidden">
-                <AITimelineEnhanced 
-                  signals={filteredAISignals.length > 0 ? filteredAISignals : aiSignals.slice(0, 5)} 
-                  userAsset={settings.initialAsset}
-                />
-              </div>
-              <div className="h-[250px] border-t border-border overflow-y-auto">
-                <div className="p-2 border-b border-border flex items-center gap-2">
-                  <Bell className="w-4 h-4 text-primary" />
-                  <span className="text-xs font-semibold text-muted-foreground">AI 조언</span>
-                </div>
-                <div className="p-2">
-                  <AIAdvicePanel />
-                </div>
+              <ResizablePanelGroup direction="vertical" className="flex-1">
+                <ResizablePanel defaultSize={65} minSize={30}>
+                  <div className="h-full overflow-hidden">
+                    <AITimelineEnhanced 
+                      signals={filteredAISignals.length > 0 ? filteredAISignals : aiSignals.slice(0, 5)} 
+                      userAsset={settings.initialAsset}
+                    />
+                  </div>
+                </ResizablePanel>
+                <ResizableHandle withHandle />
+                <ResizablePanel defaultSize={35} minSize={15}>
+                  <div className="h-full overflow-y-auto">
+                    <div className="p-2 border-b border-border flex items-center gap-2 sticky top-0 bg-card/95 backdrop-blur-sm z-10">
+                      <Bell className="w-4 h-4 text-primary" />
+                      <span className="text-xs font-semibold text-muted-foreground">AI 조언 및 긴급알림</span>
+                    </div>
+                    <div className="p-2">
+                      <AIAdvicePanel />
+                    </div>
+                  </div>
+                </ResizablePanel>
+              </ResizablePanelGroup>
+            </TabsContent>
+            
+            <TabsContent value="analysis" className="flex-1 overflow-hidden m-0">
+              <div className="h-full overflow-y-auto p-4">
+                <AIPerformanceAnalysis />
               </div>
             </TabsContent>
             
-            <TabsContent value="analysis" className="flex-1 overflow-y-auto m-0 p-4">
-              <AIPerformanceAnalysis />
-            </TabsContent>
-            
-            <TabsContent value="user" className="flex-1 overflow-hidden m-0 relative">
+            <TabsContent value="user" className="flex-1 overflow-hidden m-0">
               <MyPositionsPanel 
                 symbol={selectedSymbol} 
                 currentPrice={selectedCoin?.price || 0} 

@@ -8,10 +8,15 @@ import { AITimeline } from '@/components/AITimeline';
 import { NewsFeed } from '@/components/NewsFeed';
 import { Footer } from '@/components/Footer';
 import { PerformanceModal } from '@/components/PerformanceModal';
+import { AIMentorChat } from '@/components/AIMentorChat';
+import { MyPositionsPanel } from '@/components/MyPositionsPanel';
 import { useBinancePrice } from '@/hooks/useBinancePrice';
 import { useSignals } from '@/hooks/useSignals';
+import { useUserPositions } from '@/hooks/useUserPositions';
 import { mockNews, mockEvents } from '@/data/mockData';
 import { motion, AnimatePresence } from 'framer-motion';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Bot, User } from 'lucide-react';
 
 const Index = () => {
   const [selectedSymbol, setSelectedSymbol] = useState('BTC');
@@ -22,6 +27,9 @@ const Index = () => {
   
   // Use signals from database
   const { signals, stats, isLoading: signalsLoading } = useSignals();
+  
+  // User positions
+  const { positions, stats: userStats } = useUserPositions();
 
   const selectedCoin = useMemo(
     () => coins.find(c => c.symbol === selectedSymbol) || coins[0],
@@ -36,6 +44,11 @@ const Index = () => {
   const filteredSignals = useMemo(
     () => signals.filter(s => s.symbol === selectedSymbol),
     [selectedSymbol, signals]
+  );
+
+  const activeUserPosition = useMemo(
+    () => positions.find(p => p.symbol === selectedSymbol && p.status === 'ACTIVE'),
+    [selectedSymbol, positions]
   );
 
   return (
@@ -98,22 +111,61 @@ const Index = () => {
           </motion.div>
         </main>
 
-        {/* Right Sidebar - AI Timeline & News */}
+        {/* Right Sidebar - AI vs User Tabs */}
         <motion.aside
           initial={{ opacity: 0, x: 20 }}
           animate={{ opacity: 1, x: 0 }}
-          className="w-80 border-l border-border bg-card/30 hidden xl:flex flex-col"
+          className="w-96 border-l border-border bg-card/30 hidden xl:flex flex-col"
         >
-          <div className="flex-1 overflow-hidden">
-            <AITimeline signals={filteredSignals.length > 0 ? filteredSignals : signals.slice(0, 5)} />
-          </div>
-          <div className="h-[400px] border-t border-border">
-            <NewsFeed news={mockNews} events={mockEvents} />
-          </div>
+          <Tabs defaultValue="ai" className="flex-1 flex flex-col">
+            <TabsList className="w-full grid grid-cols-2 p-1 m-2">
+              <TabsTrigger value="ai" className="flex items-center gap-2">
+                <Bot className="w-4 h-4" />
+                AI 멘토
+                <span className="text-xs text-muted-foreground">({stats.winRate}%)</span>
+              </TabsTrigger>
+              <TabsTrigger value="user" className="flex items-center gap-2">
+                <User className="w-4 h-4" />
+                내 포지션
+                <span className="text-xs text-muted-foreground">({userStats.winRate}%)</span>
+              </TabsTrigger>
+            </TabsList>
+            
+            <TabsContent value="ai" className="flex-1 flex flex-col overflow-hidden m-0">
+              <div className="flex-1 overflow-hidden">
+                <AITimeline signals={filteredSignals.length > 0 ? filteredSignals : signals.slice(0, 5)} />
+              </div>
+              <div className="h-[350px] border-t border-border">
+                <NewsFeed news={mockNews} events={mockEvents} />
+              </div>
+            </TabsContent>
+            
+            <TabsContent value="user" className="flex-1 overflow-hidden m-0 relative">
+              <MyPositionsPanel 
+                symbol={selectedSymbol} 
+                currentPrice={selectedCoin?.price || 0} 
+              />
+            </TabsContent>
+          </Tabs>
         </motion.aside>
       </div>
 
       <Footer />
+
+      {/* AI Mentor Chat */}
+      {selectedCoin && (
+        <AIMentorChat
+          symbol={selectedSymbol}
+          currentPrice={selectedCoin.price}
+          userPosition={activeUserPosition ? {
+            type: activeUserPosition.position,
+            entryPrice: activeUserPosition.entryPrice,
+            targetPrice: activeUserPosition.targetPrice,
+            stopLoss: activeUserPosition.stopLoss,
+            leverage: activeUserPosition.leverage,
+          } : undefined}
+        />
+      )}
 
       {/* Performance Modal */}
       <AnimatePresence>

@@ -19,6 +19,7 @@ import { useUserPositions } from '@/hooks/useUserPositions';
 import { mockNews, mockEvents } from '@/data/mockData';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from '@/components/ui/resizable';
 import { Bot, User, BarChart3, Bell } from 'lucide-react';
 
 const Index = () => {

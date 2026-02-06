@@ -1,58 +1,6 @@
-import { CoinData, AISignal, NewsItem, SentimentData, EventItem } from '@/types/trading';
+import { NewsItem, EventItem } from '@/types/trading';
 
-export const mockCoins: CoinData[] = [
-  { symbol: 'BTC', name: 'Bitcoin', price: 97234.56, change24h: 2.34, volume24h: 45000000000, aiWinRate: 78 },
-  { symbol: 'ETH', name: 'Ethereum', price: 3456.78, change24h: -1.23, volume24h: 18000000000, aiWinRate: 72 },
-  { symbol: 'SOL', name: 'Solana', price: 178.90, change24h: 5.67, volume24h: 5200000000, aiWinRate: 81 },
-  { symbol: 'BNB', name: 'BNB', price: 654.32, change24h: 0.89, volume24h: 2100000000, aiWinRate: 69 },
-  { symbol: 'XRP', name: 'Ripple', price: 2.34, change24h: -0.56, volume24h: 3400000000, aiWinRate: 65 },
-  { symbol: 'DOGE', name: 'Dogecoin', price: 0.3456, change24h: 8.90, volume24h: 2800000000, aiWinRate: 58 },
-  { symbol: 'ADA', name: 'Cardano', price: 0.98, change24h: 3.21, volume24h: 890000000, aiWinRate: 62 },
-  { symbol: 'AVAX', name: 'Avalanche', price: 38.76, change24h: -2.34, volume24h: 720000000, aiWinRate: 70 },
-];
-
-export const mockSignals: AISignal[] = [
-  {
-    id: '1',
-    symbol: 'BTC',
-    position: 'LONG',
-    entryPrice: 96800,
-    targetPrice: 99500,
-    stopLoss: 95200,
-    leverage: 10,
-    timestamp: new Date(Date.now() - 1000 * 60 * 5),
-    confidence: 85,
-    status: 'ACTIVE',
-    message: 'BTC 강한 상승 모멘텀 포착. RSI 과매도 해소 후 반등 시그널. 레버리지 10x 진입 권장.'
-  },
-  {
-    id: '2',
-    symbol: 'ETH',
-    position: 'SHORT',
-    entryPrice: 3520,
-    targetPrice: 3380,
-    stopLoss: 3600,
-    leverage: 5,
-    timestamp: new Date(Date.now() - 1000 * 60 * 30),
-    confidence: 72,
-    status: 'WIN',
-    message: 'ETH 저항선 돌파 실패. 단기 조정 예상. 보수적 레버리지 권장.'
-  },
-  {
-    id: '3',
-    symbol: 'SOL',
-    position: 'LONG',
-    entryPrice: 172,
-    targetPrice: 195,
-    stopLoss: 165,
-    leverage: 15,
-    timestamp: new Date(Date.now() - 1000 * 60 * 120),
-    confidence: 91,
-    status: 'ACTIVE',
-    message: 'SOL 생태계 호재 다수 포착. 트위터 긍정 언급 급증. 공격적 진입 가능.'
-  },
-];
-
+// Mock news with URLs (will be replaced by real API data later)
 export const mockNews: NewsItem[] = [
   {
     id: '1',
@@ -60,6 +8,7 @@ export const mockNews: NewsItem[] = [
     source: 'Bloomberg',
     sentiment: 'bullish',
     timestamp: new Date(Date.now() - 1000 * 60 * 15),
+    url: 'https://www.bloomberg.com/crypto',
   },
   {
     id: '2',
@@ -67,6 +16,7 @@ export const mockNews: NewsItem[] = [
     source: 'Reuters',
     sentiment: 'bearish',
     timestamp: new Date(Date.now() - 1000 * 60 * 45),
+    url: 'https://www.reuters.com/technology/',
   },
   {
     id: '3',
@@ -74,6 +24,7 @@ export const mockNews: NewsItem[] = [
     source: 'CoinDesk',
     sentiment: 'bullish',
     timestamp: new Date(Date.now() - 1000 * 60 * 90),
+    url: 'https://www.coindesk.com/',
   },
   {
     id: '4',
@@ -81,16 +32,11 @@ export const mockNews: NewsItem[] = [
     source: 'The Block',
     sentiment: 'neutral',
     timestamp: new Date(Date.now() - 1000 * 60 * 120),
+    url: 'https://www.theblock.co/',
   },
 ];
 
-export const mockSentiment: SentimentData = {
-  longRatio: 62,
-  shortRatio: 38,
-  twitterSentiment: 71,
-  newsSentiment: 58,
-};
-
+// Mock events with official URLs
 export const mockEvents: EventItem[] = [
   {
     id: '1',
@@ -98,6 +44,7 @@ export const mockEvents: EventItem[] = [
     coin: 'BTC',
     type: 'CONFERENCE',
     timestamp: new Date(Date.now() + 1000 * 60 * 60 * 24 * 3),
+    url: 'https://www.bitcoinhalving.com/',
   },
   {
     id: '2',
@@ -105,6 +52,7 @@ export const mockEvents: EventItem[] = [
     coin: 'SOL',
     type: 'AMA',
     timestamp: new Date(Date.now() + 1000 * 60 * 60 * 6),
+    url: 'https://solana.com/breakpoint',
   },
   {
     id: '3',
@@ -112,5 +60,6 @@ export const mockEvents: EventItem[] = [
     coin: 'ARB',
     type: 'UNLOCK',
     timestamp: new Date(Date.now() + 1000 * 60 * 60 * 48),
+    url: 'https://token.unlocks.app/arbitrum',
   },
 ];

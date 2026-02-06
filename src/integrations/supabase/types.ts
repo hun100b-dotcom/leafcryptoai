@@ -14,7 +14,54 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      trading_signals: {
+        Row: {
+          close_price: number | null
+          closed_at: string | null
+          confidence: number
+          created_at: string
+          entry_price: number
+          id: string
+          leverage: number
+          message: string | null
+          position: string
+          status: string
+          stop_loss: number
+          symbol: string
+          target_price: number
+        }
+        Insert: {
+          close_price?: number | null
+          closed_at?: string | null
+          confidence?: number
+          created_at?: string
+          entry_price: number
+          id?: string
+          leverage?: number
+          message?: string | null
+          position: string
+          status?: string
+          stop_loss: number
+          symbol: string
+          target_price: number
+        }
+        Update: {
+          close_price?: number | null
+          closed_at?: string | null
+          confidence?: number
+          created_at?: string
+          entry_price?: number
+          id?: string
+          leverage?: number
+          message?: string | null
+          position?: string
+          status?: string
+          stop_loss?: number
+          symbol?: string
+          target_price?: number
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

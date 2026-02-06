@@ -1,7 +1,7 @@
 import { NewsItem, EventItem } from '@/types/trading';
 import { cn } from '@/lib/utils';
 import { motion } from 'framer-motion';
-import { Newspaper, TrendingUp, TrendingDown, Minus, Calendar, Clock, AlertTriangle } from 'lucide-react';
+import { Newspaper, TrendingUp, TrendingDown, Minus, Calendar, Clock, AlertTriangle, ExternalLink } from 'lucide-react';
 import { formatDistanceToNow, differenceInHours } from 'date-fns';
 import { ko } from 'date-fns/locale';
 
@@ -79,12 +79,25 @@ export function NewsFeed({ news, events }: NewsFeedProps) {
                   <span className="text-xs font-mono text-primary">{event.coin}</span>
                 </div>
                 <p className="text-sm font-medium mb-1">{event.title}</p>
-                <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                  {isUrgent && <AlertTriangle className="w-3 h-3 text-primary" />}
-                  <Clock className="w-3 h-3" />
-                  <span className={isUrgent ? "text-primary font-semibold" : ""}>
-                    {formatCountdown(event.timestamp)}
-                  </span>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                    {isUrgent && <AlertTriangle className="w-3 h-3 text-primary" />}
+                    <Clock className="w-3 h-3" />
+                    <span className={isUrgent ? "text-primary font-semibold" : ""}>
+                      {formatCountdown(event.timestamp)}
+                    </span>
+                  </div>
+                  {event.url && (
+                    <a
+                      href={event.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-1 text-xs text-primary hover:underline"
+                    >
+                      <ExternalLink className="w-3 h-3" />
+                      공식 링크
+                    </a>
+                  )}
                 </div>
               </motion.div>
             );
@@ -101,12 +114,15 @@ export function NewsFeed({ news, events }: NewsFeedProps) {
           </h3>
           <div className="space-y-3">
             {news.map((item, index) => (
-              <motion.div
+              <motion.a
                 key={item.id}
+                href={item.url}
+                target="_blank"
+                rel="noopener noreferrer"
                 initial={{ opacity: 0, x: 10 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: index * 0.1 }}
-                className="p-3 rounded-lg bg-accent/30 hover:bg-accent/50 transition-colors cursor-pointer"
+                className="block p-3 rounded-lg bg-accent/30 hover:bg-accent/50 transition-colors cursor-pointer group"
               >
                 <div className="flex items-start gap-2">
                   <div className={cn(
@@ -118,17 +134,18 @@ export function NewsFeed({ news, events }: NewsFeedProps) {
                     {getSentimentIcon(item.sentiment)}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium leading-snug line-clamp-2">
+                    <p className="text-sm font-medium leading-snug line-clamp-2 group-hover:text-primary transition-colors">
                       {item.title}
                     </p>
                     <div className="flex items-center gap-2 mt-1 text-xs text-muted-foreground">
                       <span>{item.source}</span>
                       <span>•</span>
                       <span>{formatDistanceToNow(item.timestamp, { addSuffix: true, locale: ko })}</span>
+                      <ExternalLink className="w-3 h-3 ml-auto opacity-0 group-hover:opacity-100 transition-opacity" />
                     </div>
                   </div>
                 </div>
-              </motion.div>
+              </motion.a>
             ))}
           </div>
         </div>

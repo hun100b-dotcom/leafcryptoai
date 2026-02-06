@@ -2,14 +2,15 @@ import { useState, useMemo } from 'react';
 import { Header } from '@/components/Header';
 import { CoinList } from '@/components/CoinList';
 import { ActionCard } from '@/components/ActionCard';
-import { PriceChart } from '@/components/PriceChart';
+import { TradingViewChart } from '@/components/TradingViewChart';
 import { SentimentGauge } from '@/components/SentimentGauge';
 import { AITimeline } from '@/components/AITimeline';
 import { NewsFeed } from '@/components/NewsFeed';
 import { Footer } from '@/components/Footer';
 import { PerformanceModal } from '@/components/PerformanceModal';
 import { useBinancePrice } from '@/hooks/useBinancePrice';
-import { mockSignals, mockNews, mockSentiment, mockEvents } from '@/data/mockData';
+import { useSignals } from '@/hooks/useSignals';
+import { mockNews, mockEvents } from '@/data/mockData';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const Index = () => {
@@ -18,6 +19,9 @@ const Index = () => {
   
   // Use real Binance prices
   const { coins, isConnected } = useBinancePrice();
+  
+  // Use signals from database
+  const { signals, stats, isLoading: signalsLoading } = useSignals();
 
   const selectedCoin = useMemo(
     () => coins.find(c => c.symbol === selectedSymbol) || coins[0],
@@ -25,38 +29,21 @@ const Index = () => {
   );
 
   const activeSignal = useMemo(
-    () => mockSignals.find(s => s.symbol === selectedSymbol && s.status === 'ACTIVE'),
-    [selectedSymbol]
+    () => signals.find(s => s.symbol === selectedSymbol && s.status === 'ACTIVE'),
+    [selectedSymbol, signals]
   );
 
   const filteredSignals = useMemo(
-    () => mockSignals.filter(s => s.symbol === selectedSymbol),
-    [selectedSymbol]
+    () => signals.filter(s => s.symbol === selectedSymbol),
+    [selectedSymbol, signals]
   );
-
-  // Calculate overall stats from mock signals
-  const stats = useMemo(() => {
-    const completed = mockSignals.filter(s => s.status === 'WIN' || s.status === 'LOSS');
-    const wins = completed.filter(s => s.status === 'WIN').length;
-    const winRate = completed.length > 0 ? Math.round((wins / completed.length) * 100) : 76;
-    
-    const pnl = mockSignals.reduce((acc, signal) => {
-      if (signal.status === 'WIN') {
-        return acc + ((signal.targetPrice - signal.entryPrice) / signal.entryPrice) * 100 * signal.leverage;
-      } else if (signal.status === 'LOSS') {
-        return acc + ((signal.stopLoss - signal.entryPrice) / signal.entryPrice) * 100 * signal.leverage;
-      }
-      return acc;
-    }, 0);
-    
-    return { winRate, pnl: Math.round(pnl) };
-  }, []);
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
       <Header 
         totalWinRate={stats.winRate} 
-        totalPnL={stats.pnl || 187} 
+        totalPnL={stats.totalPnL} 
+        totalSignals={stats.completedSignals}
         isConnected={isConnected}
         onOpenPerformance={() => setIsPerformanceOpen(true)}
       />
@@ -88,13 +75,16 @@ const Index = () => {
                 <ActionCard coin={selectedCoin} signal={activeSignal} />
               </motion.div>
 
+              {/* TradingView Real Chart */}
               <motion.div
                 key={selectedSymbol + '-chart'}
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.2 }}
+                className="trading-card p-0 overflow-hidden"
+                style={{ height: '500px' }}
               >
-                <PriceChart coin={selectedCoin} />
+                <TradingViewChart symbol={selectedSymbol} />
               </motion.div>
             </>
           )}
@@ -104,7 +94,7 @@ const Index = () => {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.3 }}
           >
-            <SentimentGauge sentiment={mockSentiment} />
+            <SentimentGauge symbol={selectedSymbol} news={mockNews} />
           </motion.div>
         </main>
 
@@ -115,7 +105,7 @@ const Index = () => {
           className="w-80 border-l border-border bg-card/30 hidden xl:flex flex-col"
         >
           <div className="flex-1 overflow-hidden">
-            <AITimeline signals={filteredSignals.length > 0 ? filteredSignals : mockSignals} />
+            <AITimeline signals={filteredSignals.length > 0 ? filteredSignals : signals.slice(0, 5)} />
           </div>
           <div className="h-[400px] border-t border-border">
             <NewsFeed news={mockNews} events={mockEvents} />
@@ -131,7 +121,8 @@ const Index = () => {
           <PerformanceModal
             isOpen={isPerformanceOpen}
             onClose={() => setIsPerformanceOpen(false)}
-            signals={mockSignals}
+            signals={signals}
+            stats={stats}
           />
         )}
       </AnimatePresence>

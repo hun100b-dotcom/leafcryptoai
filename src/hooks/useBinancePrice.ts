@@ -1,8 +1,8 @@
 import { useState, useEffect, useCallback } from 'react';
 import { CoinData } from '@/types/trading';
+import { supabase } from '@/integrations/supabase/client';
 
 const BINANCE_WS_URL = 'wss://stream.binance.com:9443/ws';
-const BINANCE_REST_URL = 'https://api.binance.com/api/v3';
 
 const COIN_SYMBOLS = ['BTC', 'ETH', 'SOL', 'BNB', 'XRP', 'DOGE', 'ADA', 'AVAX'];
 
@@ -18,13 +18,27 @@ export function useBinancePrice() {
   const [isConnected, setIsConnected] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Fetch initial prices via REST API
+  // Fetch initial prices via Edge Function (CORS proxy)
   const fetchInitialPrices = useCallback(async () => {
     try {
-      const response = await fetch(`${BINANCE_REST_URL}/ticker/24hr`);
+      const { data, error: fnError } = await supabase.functions.invoke('binance-proxy', {
+        body: null,
+        headers: { 'Content-Type': 'application/json' },
+      });
+      
+      // Use query params approach
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/binance-proxy?endpoint=ticker`,
+        {
+          headers: {
+            'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+          },
+        }
+      );
+      
       if (!response.ok) throw new Error('Failed to fetch prices');
       
-      const data: Array<{
+      const tickerData: Array<{
         symbol: string;
         lastPrice: string;
         priceChangePercent: string;
@@ -34,7 +48,7 @@ export function useBinancePrice() {
       const priceMap = new Map<string, CoinData>();
       
       COIN_SYMBOLS.forEach((symbol) => {
-        const ticker = data.find(t => t.symbol === `${symbol}USDT`);
+        const ticker = tickerData.find(t => t.symbol === `${symbol}USDT`);
         if (ticker) {
           priceMap.set(symbol, {
             symbol,
@@ -49,9 +63,11 @@ export function useBinancePrice() {
 
       setPrices(priceMap);
       setError(null);
+      setIsConnected(true);
     } catch (err) {
       console.error('Failed to fetch initial prices:', err);
       setError('가격 데이터를 불러오는데 실패했습니다');
+      setIsConnected(false);
     }
   }, []);
 

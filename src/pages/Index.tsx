@@ -142,7 +142,7 @@ const Index = () => {
             
             <TabsContent value="ai" className="flex-1 flex flex-col overflow-hidden m-0">
               <ResizablePanelGroup direction="vertical" className="flex-1">
-                <ResizablePanel defaultSize={65} minSize={30}>
+                <ResizablePanel defaultSize={60} minSize={25}>
                   <div className="h-full overflow-hidden">
                     <AITimelineEnhanced 
                       signals={filteredAISignals.length > 0 ? filteredAISignals : aiSignals.slice(0, 5)} 
@@ -151,8 +151,8 @@ const Index = () => {
                   </div>
                 </ResizablePanel>
                 <ResizableHandle withHandle />
-                <ResizablePanel defaultSize={35} minSize={15}>
-                  <div className="h-full overflow-y-auto">
+                <ResizablePanel defaultSize={40} minSize={20}>
+                  <div className="h-full overflow-y-auto scrollbar-thin">
                     <div className="p-2 border-b border-border flex items-center gap-2 sticky top-0 bg-card/95 backdrop-blur-sm z-10">
                       <Bell className="w-4 h-4 text-primary" />
                       <span className="text-xs font-semibold text-muted-foreground">AI 조언 및 긴급알림</span>
@@ -165,17 +165,19 @@ const Index = () => {
               </ResizablePanelGroup>
             </TabsContent>
             
-            <TabsContent value="analysis" className="flex-1 overflow-hidden m-0">
-              <div className="h-full overflow-y-auto p-4">
+            <TabsContent value="analysis" className="flex-1 overflow-y-auto m-0 p-0">
+              <div className="h-full overflow-y-auto scrollbar-thin p-4">
                 <AIPerformanceAnalysis />
               </div>
             </TabsContent>
             
-            <TabsContent value="user" className="flex-1 overflow-hidden m-0">
-              <MyPositionsPanel 
-                symbol={selectedSymbol} 
-                currentPrice={selectedCoin?.price || 0} 
-              />
+            <TabsContent value="user" className="flex-1 overflow-hidden m-0 p-0">
+              <div className="h-full overflow-hidden">
+                <MyPositionsPanel 
+                  symbol={selectedSymbol} 
+                  currentPrice={selectedCoin?.price || 0} 
+                />
+              </div>
             </TabsContent>
           </Tabs>
         </motion.aside>

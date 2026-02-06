@@ -62,6 +62,78 @@ export type Database = {
         }
         Relationships: []
       }
+      user_positions: {
+        Row: {
+          close_price: number | null
+          closed_at: string | null
+          created_at: string
+          entry_price: number
+          id: string
+          leverage: number
+          message: string | null
+          position: string
+          status: string
+          stop_loss: number
+          symbol: string
+          target_price: number
+          user_id: string
+        }
+        Insert: {
+          close_price?: number | null
+          closed_at?: string | null
+          created_at?: string
+          entry_price: number
+          id?: string
+          leverage?: number
+          message?: string | null
+          position: string
+          status?: string
+          stop_loss: number
+          symbol: string
+          target_price: number
+          user_id: string
+        }
+        Update: {
+          close_price?: number | null
+          closed_at?: string | null
+          created_at?: string
+          entry_price?: number
+          id?: string
+          leverage?: number
+          message?: string | null
+          position?: string
+          status?: string
+          stop_loss?: number
+          symbol?: string
+          target_price?: number
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_settings: {
+        Row: {
+          created_at: string
+          id: string
+          initial_asset: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          initial_asset?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          initial_asset?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

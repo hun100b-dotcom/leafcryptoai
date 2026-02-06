@@ -71,56 +71,64 @@ export function useBinancePrice() {
     }
   }, []);
 
-  // Connect to WebSocket for real-time updates
+  // Fetch prices on mount and set up polling (WebSocket may be blocked by CORS)
   useEffect(() => {
     fetchInitialPrices();
 
+    // Poll every 5 seconds as fallback
+    const interval = setInterval(fetchInitialPrices, 5000);
+
+    // Try WebSocket connection
     const streams = COIN_SYMBOLS.map(s => `${s.toLowerCase()}usdt@ticker`).join('/');
-    const ws = new WebSocket(`${BINANCE_WS_URL}/${streams}`);
+    let ws: WebSocket | null = null;
+    
+    try {
+      ws = new WebSocket(`${BINANCE_WS_URL}/${streams}`);
 
-    ws.onopen = () => {
-      console.log('Binance WebSocket connected');
-      setIsConnected(true);
-      setError(null);
-    };
+      ws.onopen = () => {
+        console.log('Binance WebSocket connected');
+        setIsConnected(true);
+        setError(null);
+      };
 
-    ws.onmessage = (event) => {
-      try {
-        const data = JSON.parse(event.data) as BinanceTickerData;
-        const symbol = data.s.replace('USDT', '');
-        
-        if (COIN_SYMBOLS.includes(symbol)) {
-          setPrices(prev => {
-            const newMap = new Map(prev);
-            newMap.set(symbol, {
-              symbol,
-              name: getFullName(symbol),
-              price: parseFloat(data.c),
-              change24h: parseFloat(data.P),
-              volume24h: parseFloat(data.v) * parseFloat(data.c),
-              aiWinRate: getAIWinRate(symbol),
+      ws.onmessage = (event) => {
+        try {
+          const data = JSON.parse(event.data) as BinanceTickerData;
+          const symbol = data.s.replace('USDT', '');
+          
+          if (COIN_SYMBOLS.includes(symbol)) {
+            setPrices(prev => {
+              const newMap = new Map(prev);
+              newMap.set(symbol, {
+                symbol,
+                name: getFullName(symbol),
+                price: parseFloat(data.c),
+                change24h: parseFloat(data.P),
+                volume24h: parseFloat(data.v) * parseFloat(data.c),
+                aiWinRate: getAIWinRate(symbol),
+              });
+              return newMap;
             });
-            return newMap;
-          });
+          }
+        } catch (err) {
+          console.error('Failed to parse WebSocket message:', err);
         }
-      } catch (err) {
-        console.error('Failed to parse WebSocket message:', err);
-      }
-    };
+      };
 
-    ws.onerror = (event) => {
-      console.error('WebSocket error:', event);
-      setError('실시간 연결 오류');
-      setIsConnected(false);
-    };
+      ws.onerror = () => {
+        console.log('WebSocket not available, using polling fallback');
+      };
 
-    ws.onclose = () => {
-      console.log('WebSocket disconnected');
-      setIsConnected(false);
-    };
+      ws.onclose = () => {
+        console.log('WebSocket disconnected');
+      };
+    } catch (e) {
+      console.log('WebSocket not supported, using polling');
+    }
 
     return () => {
-      ws.close();
+      clearInterval(interval);
+      ws?.close();
     };
   }, [fetchInitialPrices]);
 

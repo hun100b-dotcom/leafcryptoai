@@ -9,8 +9,6 @@ interface LongShortRatioData {
   timestamp: number;
 }
 
-const BINANCE_FUTURES_API = 'https://fapi.binance.com/futures/data';
-
 export function useBinanceLongShortRatio(symbol: string = 'BTC') {
   const [data, setData] = useState<LongShortRatioData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -20,9 +18,14 @@ export function useBinanceLongShortRatio(symbol: string = 'BTC') {
     try {
       setIsLoading(true);
       
-      // Fetch top trader long/short ratio (accounts)
+      // Fetch via Edge Function (CORS proxy)
       const response = await fetch(
-        `${BINANCE_FUTURES_API}/topLongShortAccountRatio?symbol=${symbol}USDT&period=5m&limit=1`
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/binance-proxy?endpoint=longShortRatio&symbol=${symbol}`,
+        {
+          headers: {
+            'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+          },
+        }
       );
       
       if (!response.ok) {

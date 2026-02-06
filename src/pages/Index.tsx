@@ -43,25 +43,8 @@ const Index = () => {
   );
 
   const activeSignal = useMemo(
-    () => {
-      // Check new AI signals first, then legacy
-      const newSignal = aiSignals.find(s => s.symbol === selectedSymbol && s.status === 'ACTIVE');
-      if (newSignal) return {
-        id: newSignal.id,
-        symbol: newSignal.symbol,
-        position: newSignal.position,
-        entryPrice: newSignal.entryPrice,
-        targetPrice: newSignal.targetPrice,
-        stopLoss: newSignal.stopLoss,
-        leverage: newSignal.leverage,
-        timestamp: newSignal.createdAt,
-        confidence: newSignal.confidence,
-        status: newSignal.status,
-        message: newSignal.evidenceReasoning || '',
-      };
-      return signals.find(s => s.symbol === selectedSymbol && s.status === 'ACTIVE');
-    },
-    [selectedSymbol, signals, aiSignals]
+    () => signals.find(s => s.symbol === selectedSymbol && s.status === 'ACTIVE'),
+    [selectedSymbol, signals]
   );
 
   const filteredAISignals = useMemo(

@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { supabase } from '@/integrations/supabase/client';
 
 interface LongShortRatioData {
   symbol: string;
@@ -9,8 +10,6 @@ interface LongShortRatioData {
   timestamp: number;
 }
 
-const BINANCE_FUTURES_API = 'https://fapi.binance.com/futures/data';
-
 export function useBinanceLongShortRatio(symbol: string = 'BTC') {
   const [data, setData] = useState<LongShortRatioData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -20,16 +19,12 @@ export function useBinanceLongShortRatio(symbol: string = 'BTC') {
     try {
       setIsLoading(true);
       
-      // Fetch top trader long/short ratio (accounts)
-      const response = await fetch(
-        `${BINANCE_FUTURES_API}/topLongShortAccountRatio?symbol=${symbol}USDT&period=5m&limit=1`
-      );
+      // Fetch via Edge Function (CORS proxy)
+      const { data: result, error: fnError } = await supabase.functions.invoke('binance-proxy', {
+        body: { endpoint: 'longShortRatio', symbol },
+      });
       
-      if (!response.ok) {
-        throw new Error('Failed to fetch long/short ratio');
-      }
-      
-      const result = await response.json();
+      if (fnError) throw fnError;
       
       if (result && result.length > 0) {
         const latestData = result[0];

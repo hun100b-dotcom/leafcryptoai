@@ -48,16 +48,16 @@ export function useSignals() {
         id: row.id,
         symbol: row.symbol,
         position: row.position as AISignal['position'],
-        entryPrice: parseFloat(row.entry_price),
-        targetPrice: parseFloat(row.target_price),
-        stopLoss: parseFloat(row.stop_loss),
+        entryPrice: Number(row.entry_price),
+        targetPrice: Number(row.target_price),
+        stopLoss: Number(row.stop_loss),
         leverage: row.leverage,
         timestamp: new Date(row.created_at),
         confidence: row.confidence,
         status: row.status as AISignal['status'],
         message: row.message || '',
         closedAt: row.closed_at ? new Date(row.closed_at) : undefined,
-        closePrice: row.close_price ? parseFloat(row.close_price) : undefined,
+        closePrice: row.close_price ? Number(row.close_price) : undefined,
       }));
 
       setSignals(mappedSignals);

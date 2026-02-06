@@ -1,8 +1,8 @@
 import { useState, useEffect, useCallback } from 'react';
 import { CoinData } from '@/types/trading';
+import { supabase } from '@/integrations/supabase/client';
 
 const BINANCE_WS_URL = 'wss://stream.binance.com:9443/ws';
-const BINANCE_REST_URL = 'https://api.binance.com/api/v3';
 
 const COIN_SYMBOLS = ['BTC', 'ETH', 'SOL', 'BNB', 'XRP', 'DOGE', 'ADA', 'AVAX'];
 
@@ -18,23 +18,20 @@ export function useBinancePrice() {
   const [isConnected, setIsConnected] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Fetch initial prices via REST API
+  // Fetch initial prices via Edge Function (CORS proxy)
   const fetchInitialPrices = useCallback(async () => {
     try {
-      const response = await fetch(`${BINANCE_REST_URL}/ticker/24hr`);
-      if (!response.ok) throw new Error('Failed to fetch prices');
+      const { data: tickerData, error: fnError } = await supabase.functions.invoke('binance-proxy', {
+        body: { endpoint: 'ticker' },
+      });
       
-      const data: Array<{
-        symbol: string;
-        lastPrice: string;
-        priceChangePercent: string;
-        volume: string;
-      }> = await response.json();
+      if (fnError) throw fnError;
+      if (!tickerData) throw new Error('No data received');
 
       const priceMap = new Map<string, CoinData>();
       
       COIN_SYMBOLS.forEach((symbol) => {
-        const ticker = data.find(t => t.symbol === `${symbol}USDT`);
+        const ticker = tickerData.find((t: { symbol: string }) => t.symbol === `${symbol}USDT`);
         if (ticker) {
           priceMap.set(symbol, {
             symbol,
@@ -49,62 +46,72 @@ export function useBinancePrice() {
 
       setPrices(priceMap);
       setError(null);
+      setIsConnected(true);
     } catch (err) {
       console.error('Failed to fetch initial prices:', err);
       setError('가격 데이터를 불러오는데 실패했습니다');
+      setIsConnected(false);
     }
   }, []);
 
-  // Connect to WebSocket for real-time updates
+  // Fetch prices on mount and set up polling (WebSocket may be blocked by CORS)
   useEffect(() => {
     fetchInitialPrices();
 
+    // Poll every 5 seconds as fallback
+    const interval = setInterval(fetchInitialPrices, 5000);
+
+    // Try WebSocket connection
     const streams = COIN_SYMBOLS.map(s => `${s.toLowerCase()}usdt@ticker`).join('/');
-    const ws = new WebSocket(`${BINANCE_WS_URL}/${streams}`);
+    let ws: WebSocket | null = null;
+    
+    try {
+      ws = new WebSocket(`${BINANCE_WS_URL}/${streams}`);
 
-    ws.onopen = () => {
-      console.log('Binance WebSocket connected');
-      setIsConnected(true);
-      setError(null);
-    };
+      ws.onopen = () => {
+        console.log('Binance WebSocket connected');
+        setIsConnected(true);
+        setError(null);
+      };
 
-    ws.onmessage = (event) => {
-      try {
-        const data = JSON.parse(event.data) as BinanceTickerData;
-        const symbol = data.s.replace('USDT', '');
-        
-        if (COIN_SYMBOLS.includes(symbol)) {
-          setPrices(prev => {
-            const newMap = new Map(prev);
-            newMap.set(symbol, {
-              symbol,
-              name: getFullName(symbol),
-              price: parseFloat(data.c),
-              change24h: parseFloat(data.P),
-              volume24h: parseFloat(data.v) * parseFloat(data.c),
-              aiWinRate: getAIWinRate(symbol),
+      ws.onmessage = (event) => {
+        try {
+          const data = JSON.parse(event.data) as BinanceTickerData;
+          const symbol = data.s.replace('USDT', '');
+          
+          if (COIN_SYMBOLS.includes(symbol)) {
+            setPrices(prev => {
+              const newMap = new Map(prev);
+              newMap.set(symbol, {
+                symbol,
+                name: getFullName(symbol),
+                price: parseFloat(data.c),
+                change24h: parseFloat(data.P),
+                volume24h: parseFloat(data.v) * parseFloat(data.c),
+                aiWinRate: getAIWinRate(symbol),
+              });
+              return newMap;
             });
-            return newMap;
-          });
+          }
+        } catch (err) {
+          console.error('Failed to parse WebSocket message:', err);
         }
-      } catch (err) {
-        console.error('Failed to parse WebSocket message:', err);
-      }
-    };
+      };
 
-    ws.onerror = (event) => {
-      console.error('WebSocket error:', event);
-      setError('실시간 연결 오류');
-      setIsConnected(false);
-    };
+      ws.onerror = () => {
+        console.log('WebSocket not available, using polling fallback');
+      };
 
-    ws.onclose = () => {
-      console.log('WebSocket disconnected');
-      setIsConnected(false);
-    };
+      ws.onclose = () => {
+        console.log('WebSocket disconnected');
+      };
+    } catch (e) {
+      console.log('WebSocket not supported, using polling');
+    }
 
     return () => {
-      ws.close();
+      clearInterval(interval);
+      ws?.close();
     };
   }, [fetchInitialPrices]);
 

@@ -1,6 +1,7 @@
 import { motion } from 'framer-motion';
-import { forwardRef, useState } from 'react';
+import { forwardRef, useState, useMemo } from 'react';
 import { useAIManagedPositions, AIManagedPosition } from '@/hooks/useAIManagedPositions';
+import { useBinancePrices } from '@/hooks/useBinancePrices';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { 
@@ -12,7 +13,7 @@ import { ko } from 'date-fns/locale';
 import { toast } from 'sonner';
 
 interface AIManagedPositionsPanelProps {
-  currentPrice?: number;
+  // Removed currentPrice - we fetch prices per symbol now
 }
 
 export const AIManagedPositionsPanel = forwardRef<HTMLDivElement, AIManagedPositionsPanelProps>(

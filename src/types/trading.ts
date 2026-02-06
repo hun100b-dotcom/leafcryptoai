@@ -21,6 +21,8 @@ export interface AISignal {
   confidence: number;
   status: 'ACTIVE' | 'WIN' | 'LOSS' | 'PENDING';
   message: string;
+  closedAt?: Date;
+  closePrice?: number;
 }
 
 export interface NewsItem {
@@ -45,4 +47,5 @@ export interface EventItem {
   coin: string;
   type: 'AMA' | 'CONFERENCE' | 'LISTING' | 'UNLOCK';
   timestamp: Date;
+  url?: string;
 }

@@ -21,7 +21,6 @@ export function useBinanceLongShortRatio(symbol: string = 'BTC') {
       
       // Fetch via Edge Function (CORS proxy)
       const { data: result, error: fnError } = await supabase.functions.invoke('binance-proxy', {
-        method: 'GET',
         body: { endpoint: 'longShortRatio', symbol },
       });
       

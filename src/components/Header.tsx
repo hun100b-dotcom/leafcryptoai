@@ -1,10 +1,12 @@
 import { motion } from 'framer-motion';
-import { Zap, TrendingUp, Activity, BarChart3, Wifi, WifiOff, HelpCircle } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { Zap, TrendingUp, Activity, BarChart3, Wifi, WifiOff, HelpCircle, Wallet } from 'lucide-react';
 import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { Button } from "@/components/ui/button";
 
 interface HeaderProps {
   totalWinRate: number;
@@ -39,7 +41,20 @@ export function Header({ totalWinRate, totalPnL, totalSignals, isConnected = tru
           </motion.div>
         </div>
 
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-3">
+          {/* My Positions Link */}
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+          >
+            <Link to="/positions">
+              <Button variant="outline" size="sm" className="gap-2">
+                <Wallet className="w-4 h-4" />
+                내 포지션
+              </Button>
+            </Link>
+          </motion.div>
+
           {/* Connection Status */}
           <motion.div
             initial={{ opacity: 0, y: -10 }}

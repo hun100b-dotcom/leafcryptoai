@@ -1,22 +1,15 @@
 import { useState } from 'react';
-import { motion } from 'framer-motion';
-import { useAISignals, AISignal } from '@/hooks/useAISignals';
+import { useAISignals } from '@/hooks/useAISignals';
+import { supabase } from '@/integrations/supabase/client';
 import { cn } from '@/lib/utils';
-import { 
-  TrendingUp, TrendingDown, Trophy, BarChart3, 
-  RefreshCw, Trash2, CheckCircle2, XCircle, Loader2, AlertTriangle
-} from 'lucide-react';
-import { formatDistanceToNow } from 'date-fns';
-import { ko } from 'date-fns/locale';
+import { Trophy, TrendingUp, BarChart3, Zap, Trash2, RefreshCw, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 
 export function AIPerformanceTab() {
-  const { signals, stats, isLoading, refetch } = useAISignals();
+  const { stats, refetch } = useAISignals();
   const [isResetting, setIsResetting] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
-
-  const completedSignals = signals.filter(s => s.status === 'WIN' || s.status === 'LOSS');
 
   const handleRefresh = async () => {
     setIsRefreshing(true);
@@ -26,206 +19,108 @@ export function AIPerformanceTab() {
   };
 
   const handleReset = async () => {
-    if (!confirm('⚠️ 모든 AI 거래 기록, 함께 진입 포지션, 내 포지션을 삭제하시겠습니까?\n\n이 작업은 되돌릴 수 없으며 상단의 AI 승률, 누적 수익률도 함께 초기화됩니다.')) {
-      return;
-    }
-
+    if (!confirm('모든 AI 거래 기록을 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.')) return;
+    
     setIsResetting(true);
     try {
-      const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-reset-data`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
-          },
-          body: JSON.stringify({ user_id: 'default_user' }),
-        }
-      );
-
-      if (!response.ok) {
-        throw new Error('Failed to reset data');
-      }
-
-      await refetch();
-      toast.success('모든 기록이 초기화되었습니다. AI 승률과 누적 수익률도 리셋됩니다.');
+      const { error } = await supabase.functions.invoke('ai-reset-data', {
+        body: { user_id: 'anonymous' }
+      });
       
-      // Force page reload to reset all stats
-      setTimeout(() => window.location.reload(), 500);
+      if (error) throw error;
+      
+      toast.success('모든 기록이 초기화되었습니다');
+      window.location.reload();
     } catch (err) {
-      console.error('Reset failed:', err);
       toast.error('초기화에 실패했습니다');
     } finally {
       setIsResetting(false);
     }
   };
 
-  if (isLoading) {
-    return (
-      <div className="min-h-[240px] flex items-center justify-center bg-card">
-        <Loader2 className="w-6 h-6 animate-spin text-primary" />
-      </div>
-    );
-  }
-
   return (
-    <div className="h-fit flex flex-col bg-card justify-start">
-      {/* Stats Grid - 패딩 없이 바로 시작 */}
-      <div className="m-0 grid grid-cols-2 gap-2 p-3 border-b border-border">
-        <div className="p-3 rounded-lg bg-accent/50 text-center">
-          <div className="flex items-center justify-center gap-1 text-muted-foreground mb-1">
-            <Trophy className="w-3 h-3" />
-            <span className="text-xs">승률</span>
-          </div>
-          <p
-            className={cn(
-              "text-xl font-bold",
-              stats.winRate >= 50 ? "text-long" : "text-short",
-            )}
-          >
-            {stats.winRate.toFixed(1)}%
-          </p>
-          <p className="text-[10px] text-muted-foreground">
-            {stats.wins}승 {stats.losses}패
-          </p>
-        </div>
-
-        <div className="p-3 rounded-lg bg-accent/50 text-center">
-          <div className="flex items-center justify-center gap-1 text-muted-foreground mb-1">
-            <TrendingUp className="w-3 h-3" />
-            <span className="text-xs">총 수익률</span>
-          </div>
-          <p
-            className={cn(
-              "text-xl font-bold",
-              stats.totalPnl >= 0 ? "text-long" : "text-short",
-            )}
-          >
-            {stats.totalPnl >= 0 ? "+" : ""}{stats.totalPnl.toFixed(1)}%
-          </p>
-        </div>
-
-        <div className="p-3 rounded-lg bg-accent/50 text-center">
-          <div className="flex items-center justify-center gap-1 text-muted-foreground mb-1">
-            <BarChart3 className="w-3 h-3" />
-            <span className="text-xs">총 거래</span>
-          </div>
-          <p className="text-xl font-bold">{stats.totalSignals}</p>
-        </div>
-
-        <div className="p-3 rounded-lg bg-accent/50 text-center">
-          <div className="flex items-center justify-center gap-1 text-muted-foreground mb-1">
-            <span className="text-xs">평균 레버리지</span>
-          </div>
-          <p className="text-xl font-bold">{stats.avgLeverage.toFixed(1)}x</p>
-        </div>
+    <div className="bg-card">
+      {/* Stats Grid - 상단 바로 시작 */}
+      <div className="grid grid-cols-2 gap-2 p-3 border-b border-border">
+        <StatCard 
+          icon={Trophy} 
+          label="승률" 
+          value={`${stats.winRate.toFixed(1)}%`}
+          color={stats.winRate >= 50 ? 'text-long' : 'text-short'}
+        />
+        <StatCard 
+          icon={TrendingUp} 
+          label="총 수익률" 
+          value={`${stats.totalPnl >= 0 ? '+' : ''}${stats.totalPnl.toFixed(1)}%`}
+          color={stats.totalPnl >= 0 ? 'text-long' : 'text-short'}
+        />
+        <StatCard 
+          icon={BarChart3} 
+          label="총 거래" 
+          value={`${stats.totalSignals}건`}
+          sub={`${stats.wins}W / ${stats.losses}L`}
+        />
+        <StatCard 
+          icon={Zap} 
+          label="평균 레버리지" 
+          value={`${stats.avgLeverage.toFixed(1)}x`}
+        />
       </div>
 
       {/* Action Buttons */}
-      <div className="m-0 flex gap-2 p-3 border-b border-border">
-        <Button
-          size="sm"
-          variant="outline"
-          onClick={handleRefresh}
+      <div className="flex gap-2 p-3 border-b border-border">
+        <Button 
+          size="sm" 
+          variant="outline" 
+          onClick={handleRefresh} 
           disabled={isRefreshing}
           className="flex-1"
         >
-          {isRefreshing ? (
-            <Loader2 className="w-4 h-4 animate-spin" />
-          ) : (
-            <RefreshCw className="w-4 h-4 mr-1" />
-          )}
+          {isRefreshing ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4 mr-1" />}
           새로고침
         </Button>
-        <Button
-          size="sm"
-          variant="destructive"
-          onClick={handleReset}
+        <Button 
+          size="sm" 
+          variant="destructive" 
+          onClick={handleReset} 
           disabled={isResetting}
           className="flex-1"
         >
-          {isResetting ? (
-            <Loader2 className="w-4 h-4 animate-spin" />
-          ) : (
-            <Trash2 className="w-4 h-4 mr-1" />
-          )}
+          {isResetting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4 mr-1" />}
           전체 초기화
         </Button>
       </div>
 
-      {/* Reset Warning */}
-      <div className="m-0 p-2 rounded bg-destructive/10 border border-destructive/30">
-        <div className="flex items-start gap-2 text-xs text-destructive">
-          <AlertTriangle className="w-3 h-3 mt-0.5 flex-shrink-0" />
-          <span>전체 초기화 시 AI 승률, 누적 수익률, 함께 진입, 내 포지션이 모두 삭제됩니다.</span>
-        </div>
-      </div>
-
-      {/* Trade History */}
-      <div className="m-0 overflow-y-auto p-3 space-y-2 scrollbar-thin">
-        {completedSignals.length === 0 ? (
-          <div className="text-center py-8 text-muted-foreground text-sm">
-            완료된 거래가 없습니다
-          </div>
-        ) : (
-          completedSignals.slice(0, 20).map((signal, index) => (
-            <SignalHistoryCard key={signal.id} signal={signal} index={index} />
-          ))
-        )}
+      {/* Info */}
+      <div className="p-3 text-xs text-muted-foreground">
+        <p>• 승률과 수익률은 완료된 거래 기준입니다</p>
+        <p>• 전체 초기화 시 모든 AI 시그널과 포지션이 삭제됩니다</p>
       </div>
     </div>
   );
 }
 
-function SignalHistoryCard({ signal, index }: { signal: AISignal; index: number }) {
-  const isWin = signal.status === 'WIN';
-
+function StatCard({ 
+  icon: Icon, 
+  label, 
+  value, 
+  sub, 
+  color 
+}: { 
+  icon: React.ElementType; 
+  label: string; 
+  value: string; 
+  sub?: string;
+  color?: string;
+}) {
   return (
-    <motion.div
-      initial={{ opacity: 0, x: -10 }}
-      animate={{ opacity: 1, x: 0 }}
-      transition={{ delay: index * 0.03 }}
-      className={cn(
-        "p-3 rounded-lg border-l-4",
-        isWin ? "border-l-long bg-long/5" : "border-l-short bg-short/5"
-      )}
-    >
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          {isWin ? (
-            <CheckCircle2 className="w-4 h-4 text-long" />
-          ) : (
-            <XCircle className="w-4 h-4 text-short" />
-          )}
-          <div>
-            <div className="flex items-center gap-2">
-              <span className="font-semibold text-sm">{signal.symbol}</span>
-              <span className={cn(
-                "text-[10px] px-1.5 py-0.5 rounded",
-                signal.position === 'LONG' ? "bg-long/20 text-long" : "bg-short/20 text-short"
-              )}>
-                {signal.position}
-              </span>
-              <span className="text-[10px] text-muted-foreground">{signal.leverage}x</span>
-            </div>
-            <p className="text-[10px] text-muted-foreground">
-              ${signal.entryPrice.toLocaleString()} → ${signal.closePrice?.toLocaleString() || '-'}
-            </p>
-          </div>
-        </div>
-        <div className="text-right">
-          <p className={cn(
-            "font-bold text-sm",
-            (signal.pnlPercent || 0) >= 0 ? "text-long" : "text-short"
-          )}>
-            {(signal.pnlPercent || 0) >= 0 ? '+' : ''}{signal.pnlPercent?.toFixed(2) || '0'}%
-          </p>
-          <p className="text-[10px] text-muted-foreground">
-            {formatDistanceToNow(signal.createdAt, { addSuffix: true, locale: ko })}
-          </p>
-        </div>
+    <div className="p-3 rounded-lg bg-accent/50">
+      <div className="flex items-center gap-1 text-muted-foreground mb-1">
+        <Icon className="w-3 h-3" />
+        <span className="text-[10px]">{label}</span>
       </div>
-    </motion.div>
+      <p className={cn("text-sm font-bold", color)}>{value}</p>
+      {sub && <p className="text-[9px] text-muted-foreground">{sub}</p>}
+    </div>
   );
 }

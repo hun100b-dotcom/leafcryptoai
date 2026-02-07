@@ -8,8 +8,6 @@ import { AITimelineEnhanced } from '@/components/AITimelineEnhanced';
 import { Footer } from '@/components/Footer';
 import { PerformanceModal } from '@/components/PerformanceModal';
 import { AIMentorChat } from '@/components/AIMentorChat';
-import { UserPositionsTab } from '@/components/UserPositionsTab';
-import { AIPerformanceTab } from '@/components/AIPerformanceTab';
 import { AIAdvicePanel } from '@/components/AIAdvicePanel';
 import { useBinancePrice } from '@/hooks/useBinancePrice';
 import { useSignals } from '@/hooks/useSignals';
@@ -19,7 +17,7 @@ import { mockNews, mockEvents } from '@/data/mockData';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from '@/components/ui/resizable';
-import { Bot, User, BarChart3, Bell } from 'lucide-react';
+import { Bot, Bell } from 'lucide-react';
 
 const Index = () => {
   const [selectedSymbol, setSelectedSymbol] = useState('BTC');
@@ -154,27 +152,13 @@ const Index = () => {
           className="w-96 border-l border-border bg-card/30 hidden xl:flex flex-col justify-start overflow-y-auto scrollbar-thin"
         >
           <Tabs defaultValue="ai" className="flex-1 flex flex-col justify-start">
-            <TabsList className="w-full grid grid-cols-3 h-auto p-0 rounded-none bg-card border-b border-border">
+            <TabsList className="w-full grid grid-cols-1 h-auto p-0 rounded-none bg-card border-b border-border">
               <TabsTrigger 
                 value="ai" 
                 className="flex items-center gap-1 text-xs py-2.5 rounded-none data-[state=active]:bg-primary/10 data-[state=active]:text-primary border-b-2 border-transparent data-[state=active]:border-primary"
               >
                 <Bot className="w-3 h-3" />
                 AI 리딩
-              </TabsTrigger>
-              <TabsTrigger 
-                value="analysis" 
-                className="flex items-center gap-1 text-xs py-2.5 rounded-none data-[state=active]:bg-primary/10 data-[state=active]:text-primary border-b-2 border-transparent data-[state=active]:border-primary"
-              >
-                <BarChart3 className="w-3 h-3" />
-                AI 승률 분석
-              </TabsTrigger>
-              <TabsTrigger 
-                value="user" 
-                className="flex items-center gap-1 text-xs py-2.5 rounded-none data-[state=active]:bg-primary/10 data-[state=active]:text-primary border-b-2 border-transparent data-[state=active]:border-primary"
-              >
-                <User className="w-3 h-3" />
-                나의 포지션
               </TabsTrigger>
             </TabsList>
             
@@ -201,17 +185,6 @@ const Index = () => {
                   </div>
                 </ResizablePanel>
               </ResizablePanelGroup>
-            </TabsContent>
-            
-            <TabsContent value="analysis" className="m-0 p-0 h-fit flex-none">
-              <AIPerformanceTab />
-            </TabsContent>
-            
-            <TabsContent value="user" className="m-0 p-0 h-fit flex-none">
-              <UserPositionsTab 
-                symbol={selectedSymbol} 
-                currentPrice={selectedCoin?.price || 0} 
-              />
             </TabsContent>
           </Tabs>
         </motion.aside>

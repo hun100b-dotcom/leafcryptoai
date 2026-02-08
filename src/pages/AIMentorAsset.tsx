@@ -17,7 +17,7 @@ import { WhitelistSettings } from '@/components/ai-mentor/WhitelistSettings';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { cn } from '@/lib/utils';
 
-const AI_INITIAL_SEED = 10000; // $10,000 starting capital
+const AI_INITIAL_SEED = 1000; // $1,000 starting capital
 
 export default function AIMentorAsset() {
   const { signals, stats, reviews } = useAISignals();

@@ -5,9 +5,11 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { 
   Wallet, TrendingUp, ArrowUpCircle, ArrowDownCircle,
-  Percent, Edit3, Check, X, PiggyBank, DollarSign
+  Percent, Edit3, Check, X, PiggyBank, DollarSign, Trash2, Loader2
 } from 'lucide-react';
 import { UserSettings } from '@/hooks/useUserPositions';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 import {
   Dialog,
   DialogContent,
@@ -16,6 +18,17 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
 
 interface PositionStatsProps {
   userStats: {
@@ -40,6 +53,7 @@ interface PositionStatsProps {
   onUpdateInitialAsset: (amount: number) => Promise<void>;
   onDeposit: (amount: number) => Promise<void>;
   onWithdraw: (amount: number) => Promise<void>;
+  onRefetch?: () => void;
 }
 
 export function PositionStats({ 
@@ -48,7 +62,8 @@ export function PositionStats({
   settings, 
   onUpdateInitialAsset,
   onDeposit,
-  onWithdraw
+  onWithdraw,
+  onRefetch
 }: PositionStatsProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [editValue, setEditValue] = useState(settings.initialAsset.toString());
@@ -56,6 +71,9 @@ export function PositionStats({
   const [withdrawAmount, setWithdrawAmount] = useState('');
   const [isDepositOpen, setIsDepositOpen] = useState(false);
   const [isWithdrawOpen, setIsWithdrawOpen] = useState(false);
+  const [isResettingAI, setIsResettingAI] = useState(false);
+  const [isResettingManual, setIsResettingManual] = useState(false);
+  const [isResettingAll, setIsResettingAll] = useState(false);
 
   const handleSave = async () => {
     const amount = parseFloat(editValue);
@@ -85,6 +103,56 @@ export function PositionStats({
       await onWithdraw(amount);
       setWithdrawAmount('');
       setIsWithdrawOpen(false);
+    }
+  };
+
+  // Reset functions
+  const handleResetAIPositions = async () => {
+    setIsResettingAI(true);
+    try {
+      const { error } = await supabase.functions.invoke('ai-reset-data', {
+        body: { user_id: 'anonymous', reset_type: 'ai_only' }
+      });
+      if (error) throw error;
+      toast.success('AI 함께진입 기록이 초기화되었습니다');
+      onRefetch?.();
+    } catch (err) {
+      toast.error('초기화에 실패했습니다');
+    } finally {
+      setIsResettingAI(false);
+    }
+  };
+
+  const handleResetManualPositions = async () => {
+    setIsResettingManual(true);
+    try {
+      const { error } = await supabase.functions.invoke('ai-reset-data', {
+        body: { user_id: 'default_user', reset_type: 'manual_only' }
+      });
+      if (error) throw error;
+      toast.success('직접 진입 기록이 초기화되었습니다');
+      onRefetch?.();
+    } catch (err) {
+      toast.error('초기화에 실패했습니다');
+    } finally {
+      setIsResettingManual(false);
+    }
+  };
+
+  const handleResetAll = async () => {
+    setIsResettingAll(true);
+    try {
+      const { error } = await supabase.functions.invoke('ai-reset-data', {
+        body: { user_id: 'anonymous', reset_type: 'all' }
+      });
+      if (error) throw error;
+      toast.success('모든 거래 기록이 초기화되었습니다');
+      onRefetch?.();
+      window.location.reload();
+    } catch (err) {
+      toast.error('초기화에 실패했습니다');
+    } finally {
+      setIsResettingAll(false);
     }
   };
 
@@ -298,6 +366,109 @@ export function PositionStats({
             )}
           </motion.div>
         ))}
+      </div>
+
+      {/* Reset Buttons Section */}
+      <div className="mt-6 p-4 border border-destructive/20 rounded-lg bg-destructive/5">
+        <h4 className="text-sm font-medium text-destructive mb-3 flex items-center gap-2">
+          <Trash2 className="w-4 h-4" />
+          데이터 초기화
+        </h4>
+        <p className="text-xs text-muted-foreground mb-4">
+          거래 기록을 삭제합니다. 이 작업은 되돌릴 수 없습니다.
+        </p>
+        <div className="flex flex-wrap gap-2">
+          {/* Reset AI Positions */}
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button variant="outline" size="sm" className="border-destructive/50 text-destructive hover:bg-destructive/10">
+                {isResettingAI ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : null}
+                함께진입 초기화
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>함께진입 기록 초기화</AlertDialogTitle>
+                <AlertDialogDescription>
+                  AI 시그널과 함께 진입한 모든 포지션 기록이 삭제됩니다.
+                  AI 승률과 수익률 통계도 함께 초기화됩니다.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>취소</AlertDialogCancel>
+                <AlertDialogAction 
+                  onClick={handleResetAIPositions}
+                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                >
+                  초기화
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+
+          {/* Reset Manual Positions */}
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button variant="outline" size="sm" className="border-destructive/50 text-destructive hover:bg-destructive/10">
+                {isResettingManual ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : null}
+                직접진입 초기화
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>직접진입 기록 초기화</AlertDialogTitle>
+                <AlertDialogDescription>
+                  직접 진입한 모든 포지션 기록이 삭제됩니다.
+                  수익률 통계도 함께 초기화됩니다.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>취소</AlertDialogCancel>
+                <AlertDialogAction 
+                  onClick={handleResetManualPositions}
+                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                >
+                  초기화
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+
+          {/* Reset All */}
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button variant="destructive" size="sm">
+                {isResettingAll ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : null}
+                전체 초기화
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>⚠️ 전체 데이터 초기화</AlertDialogTitle>
+                <AlertDialogDescription className="space-y-2">
+                  <span className="block">다음 데이터가 모두 삭제됩니다:</span>
+                  <ul className="list-disc list-inside text-sm space-y-1">
+                    <li>AI 함께진입 포지션</li>
+                    <li>직접진입 포지션</li>
+                    <li>AI 시그널 기록</li>
+                    <li>AI 성과 통계</li>
+                    <li>AI 조언 기록</li>
+                  </ul>
+                  <span className="block font-medium text-destructive">이 작업은 되돌릴 수 없습니다!</span>
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>취소</AlertDialogCancel>
+                <AlertDialogAction 
+                  onClick={handleResetAll}
+                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                >
+                  전체 초기화
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        </div>
       </div>
     </div>
   );

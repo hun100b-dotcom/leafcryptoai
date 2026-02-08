@@ -28,38 +28,111 @@ export function useUserPositions() {
   const [settings, setSettings] = useState<UserSettings>({ userId: DEFAULT_USER_ID, initialAsset: 1000 });
   const [isLoading, setIsLoading] = useState(true);
 
-  // Calculate user stats
-  const stats = {
-    totalPositions: positions.length,
-    completedPositions: positions.filter(p => p.status === 'WIN' || p.status === 'LOSS').length,
-    wins: positions.filter(p => p.status === 'WIN').length,
-    losses: positions.filter(p => p.status === 'LOSS').length,
-    winRate: 0,
-    totalPnL: 0,
-    currentAsset: settings.initialAsset,
-  };
+  // Calculate stats for completed positions only (base stats)
+  const getBaseStats = useCallback(() => {
+    const completedPositions = positions.filter(p => p.status === 'WIN' || p.status === 'LOSS');
+    const wins = positions.filter(p => p.status === 'WIN').length;
+    const losses = positions.filter(p => p.status === 'LOSS').length;
+    
+    let closedPnL = 0;
+    positions.forEach(pos => {
+      if (pos.status === 'WIN') {
+        const pnl = pos.position === 'LONG'
+          ? ((pos.targetPrice - pos.entryPrice) / pos.entryPrice) * 100 * pos.leverage
+          : ((pos.entryPrice - pos.targetPrice) / pos.entryPrice) * 100 * pos.leverage;
+        closedPnL += pnl;
+      } else if (pos.status === 'LOSS') {
+        const pnl = pos.position === 'LONG'
+          ? ((pos.stopLoss - pos.entryPrice) / pos.entryPrice) * 100 * pos.leverage
+          : ((pos.entryPrice - pos.stopLoss) / pos.entryPrice) * 100 * pos.leverage;
+        closedPnL += pnl;
+      }
+    });
 
-  if (stats.completedPositions > 0) {
-    stats.winRate = Math.round((stats.wins / stats.completedPositions) * 100);
-  }
+    return {
+      totalPositions: positions.length,
+      completedPositions: completedPositions.length,
+      wins,
+      losses,
+      winRate: completedPositions.length > 0 ? Math.round((wins / completedPositions.length) * 100) : 0,
+      closedPnL: Math.round(closedPnL * 10) / 10,
+    };
+  }, [positions]);
 
-  // Calculate P&L
-  stats.totalPnL = positions.reduce((acc, pos) => {
-    if (pos.status === 'WIN') {
-      const pnl = pos.position === 'LONG'
-        ? ((pos.targetPrice - pos.entryPrice) / pos.entryPrice) * 100 * pos.leverage
-        : ((pos.entryPrice - pos.targetPrice) / pos.entryPrice) * 100 * pos.leverage;
-      return acc + pnl;
-    } else if (pos.status === 'LOSS') {
-      const pnl = pos.position === 'LONG'
-        ? ((pos.stopLoss - pos.entryPrice) / pos.entryPrice) * 100 * pos.leverage
-        : ((pos.entryPrice - pos.stopLoss) / pos.entryPrice) * 100 * pos.leverage;
-      return acc + pnl;
+  // Function to calculate real-time stats with live prices
+  const calculateRealTimeStats = useCallback((
+    priceGetter: (symbol: string) => number | undefined,
+    aiPositions?: { allocatedAsset: number; entryPrice: number; signal?: { symbol: string; position: 'LONG' | 'SHORT'; leverage: number } }[]
+  ) => {
+    const baseStats = getBaseStats();
+    const marginPercent = 0.1; // 10% of initial asset per position
+
+    // Calculate unrealized P&L for active manual positions
+    let unrealizedManualPnL = 0;
+    let activeManualMargin = 0;
+    
+    positions.filter(p => p.status === 'ACTIVE').forEach(pos => {
+      const currentPrice = priceGetter(pos.symbol);
+      if (currentPrice) {
+        const pnlPercent = pos.position === 'LONG'
+          ? ((currentPrice - pos.entryPrice) / pos.entryPrice) * 100 * pos.leverage
+          : ((pos.entryPrice - currentPrice) / pos.entryPrice) * 100 * pos.leverage;
+        
+        const margin = settings.initialAsset * marginPercent;
+        activeManualMargin += margin;
+        unrealizedManualPnL += margin * (pnlPercent / 100);
+      }
+    });
+
+    // Calculate unrealized P&L for AI positions
+    let unrealizedAIPnL = 0;
+    let activeAIMargin = 0;
+    
+    if (aiPositions) {
+      aiPositions.forEach(pos => {
+        if (pos.signal) {
+          const currentPrice = priceGetter(pos.signal.symbol);
+          if (currentPrice) {
+            const pnlPercent = pos.signal.position === 'LONG'
+              ? ((currentPrice - pos.entryPrice) / pos.entryPrice) * 100 * pos.signal.leverage
+              : ((pos.entryPrice - currentPrice) / pos.entryPrice) * 100 * pos.signal.leverage;
+            
+            activeAIMargin += pos.allocatedAsset;
+            unrealizedAIPnL += pos.allocatedAsset * (pnlPercent / 100);
+          }
+        }
+      });
     }
-    return acc;
-  }, 0);
-  stats.totalPnL = Math.round(stats.totalPnL * 10) / 10;
-  stats.currentAsset = Math.round(settings.initialAsset * (1 + stats.totalPnL / 100) * 100) / 100;
+
+    // Calculate closed P&L in dollar amount
+    const closedPnLAmount = settings.initialAsset * (baseStats.closedPnL / 100);
+    
+    // Total current asset = initial + closed P&L + unrealized P&L
+    const totalUnrealizedPnL = unrealizedManualPnL + unrealizedAIPnL;
+    const currentAsset = settings.initialAsset + closedPnLAmount + totalUnrealizedPnL;
+    const totalPnLPercent = settings.initialAsset > 0 
+      ? ((currentAsset - settings.initialAsset) / settings.initialAsset) * 100 
+      : 0;
+
+    return {
+      ...baseStats,
+      totalPnL: Math.round(totalPnLPercent * 10) / 10,
+      currentAsset: Math.round(currentAsset * 100) / 100,
+      unrealizedPnL: Math.round(totalUnrealizedPnL * 100) / 100,
+      activeMargin: Math.round((activeManualMargin + activeAIMargin) * 100) / 100,
+      availableMargin: Math.round((settings.initialAsset - activeManualMargin - activeAIMargin) * 100) / 100,
+    };
+  }, [positions, settings, getBaseStats]);
+
+  // Static stats (without real-time prices)
+  const stats = {
+    ...getBaseStats(),
+    totalPnL: getBaseStats().closedPnL,
+    currentAsset: Math.round(settings.initialAsset * (1 + getBaseStats().closedPnL / 100) * 100) / 100,
+    unrealizedPnL: 0,
+    activeMargin: 0,
+    availableMargin: settings.initialAsset,
+  };
 
   const fetchPositions = useCallback(async () => {
     try {
@@ -136,6 +209,20 @@ export function useUserPositions() {
     } catch (err) {
       console.error('Failed to update initial asset:', err);
     }
+  };
+
+  // Deposit: Add to initial asset
+  const depositAsset = async (amount: number) => {
+    if (amount <= 0) return;
+    const newAmount = settings.initialAsset + amount;
+    await updateInitialAsset(newAmount);
+  };
+
+  // Withdraw: Subtract from initial asset
+  const withdrawAsset = async (amount: number) => {
+    if (amount <= 0 || amount > settings.initialAsset) return;
+    const newAmount = settings.initialAsset - amount;
+    await updateInitialAsset(newAmount);
   };
 
   const addPosition = async (position: Omit<UserPosition, 'id' | 'createdAt' | 'status'>) => {
@@ -225,6 +312,9 @@ export function useUserPositions() {
     closePosition,
     deletePosition,
     updateInitialAsset,
+    depositAsset,
+    withdrawAsset,
+    calculateRealTimeStats,
     refetch: fetchPositions,
   };
 }

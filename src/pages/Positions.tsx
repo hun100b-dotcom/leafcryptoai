@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Header } from '@/components/Header';
 import { Footer } from '@/components/Footer';
@@ -12,7 +12,7 @@ import { useAISignals } from '@/hooks/useAISignals';
 import { useBinancePrices } from '@/hooks/useBinancePrices';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
-import { Bot, User, Plus, Zap } from 'lucide-react';
+import { Bot, User, Plus } from 'lucide-react';
 
 const Positions = () => {
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
@@ -26,7 +26,10 @@ const Positions = () => {
     addPosition, 
     closePosition, 
     deletePosition,
-    updateInitialAsset 
+    updateInitialAsset,
+    depositAsset,
+    withdrawAsset,
+    calculateRealTimeStats
   } = useUserPositions();
 
   const { 
@@ -38,13 +41,27 @@ const Positions = () => {
   const { signals: aiSignals, stats: signalStats } = useAISignals();
 
   // Get unique symbols for price fetching
-  const allSymbols = [
+  const allSymbols = useMemo(() => [
     ...new Set([
       ...userPositions.map(p => p.symbol),
       ...aiPositions.filter(p => p.signal).map(p => p.signal!.symbol)
     ])
-  ];
+  ], [userPositions, aiPositions]);
+
   const { getPrice } = useBinancePrices(allSymbols);
+
+  // Calculate real-time stats
+  const realTimeStats = useMemo(() => {
+    const activeAIPositions = aiPositions
+      .filter(p => p.status === 'ACTIVE')
+      .map(p => ({
+        allocatedAsset: p.allocatedAsset,
+        entryPrice: p.entryPrice,
+        signal: p.signal
+      }));
+    
+    return calculateRealTimeStats(getPrice, activeAIPositions);
+  }, [calculateRealTimeStats, getPrice, aiPositions]);
 
   // Active signals available to join
   const availableSignals = aiSignals.filter(s => s.status === 'ACTIVE');
@@ -95,12 +112,14 @@ const Positions = () => {
             </div>
           </div>
 
-          {/* Stats Overview */}
+          {/* Stats Overview with Real-time Data */}
           <PositionStats
-            userStats={userStats}
+            userStats={realTimeStats}
             aiStats={aiStats}
             settings={settings}
             onUpdateInitialAsset={updateInitialAsset}
+            onDeposit={depositAsset}
+            onWithdraw={withdrawAsset}
           />
 
           {/* Position Tabs */}
@@ -160,7 +179,7 @@ const Positions = () => {
             isOpen={isJoinModalOpen}
             onClose={() => setIsJoinModalOpen(false)}
             signals={availableSignals}
-            userAsset={userStats.currentAsset}
+            userAsset={realTimeStats.currentAsset}
           />
         )}
       </AnimatePresence>

@@ -35,10 +35,11 @@ const Positions = () => {
   const { 
     positions: aiPositions, 
     stats: aiStats, 
-    leaveSignal 
+    leaveSignal,
+    refetch: refetchAIPositions
   } = useAIManagedPositions();
 
-  const { signals: aiSignals, stats: signalStats } = useAISignals();
+  const { signals: aiSignals, stats: signalStats, refetch: refetchSignals } = useAISignals();
 
   // Get unique symbols for price fetching
   const allSymbols = useMemo(() => [
@@ -62,6 +63,12 @@ const Positions = () => {
     
     return calculateRealTimeStats(getPrice, activeAIPositions);
   }, [calculateRealTimeStats, getPrice, aiPositions]);
+
+  // Handle refetch after reset
+  const handleRefetchAll = () => {
+    refetchAIPositions();
+    refetchSignals();
+  };
 
   // Active signals available to join
   const availableSignals = aiSignals.filter(s => s.status === 'ACTIVE');
@@ -120,6 +127,7 @@ const Positions = () => {
             onUpdateInitialAsset={updateInitialAsset}
             onDeposit={depositAsset}
             onWithdraw={withdrawAsset}
+            onRefetch={handleRefetchAll}
           />
 
           {/* Position Tabs */}

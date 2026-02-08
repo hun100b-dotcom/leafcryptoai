@@ -1,8 +1,8 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   MessageSquare, Send, X, Bot, User, Loader2, Trash2, 
-  TrendingUp, TrendingDown, Zap
+  TrendingUp, TrendingDown, Zap, Wallet, BarChart3, AlertCircle
 } from 'lucide-react';
 import { useAIMentor } from '@/hooks/useAIMentor';
 import { cn } from '@/lib/utils';
@@ -19,15 +19,31 @@ interface AIMentorChatProps {
     stopLoss: number;
     leverage: number;
   };
+  allPositions?: Array<{
+    symbol: string;
+    type: 'LONG' | 'SHORT';
+    entryPrice: number;
+    leverage: number;
+    pnlPercent?: number;
+  }>;
+  marketSentiment?: 'bullish' | 'bearish' | 'neutral';
 }
 
 const QUICK_QUESTIONS = [
   { label: '현재 진입해도 될까요?', icon: TrendingUp },
   { label: '내 포지션 어떻게 관리할까요?', icon: TrendingDown },
   { label: '시장 전망과 주요 이벤트는?', icon: Zap },
+  { label: '내 전체 자산 상태는?', icon: Wallet },
 ];
 
-export function AIMentorChat({ symbol, currentPrice, userAsset, userPosition }: AIMentorChatProps) {
+export function AIMentorChat({ 
+  symbol, 
+  currentPrice, 
+  userAsset, 
+  userPosition,
+  allPositions = [],
+  marketSentiment = 'neutral'
+}: AIMentorChatProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [input, setInput] = useState('');
   const { messages, isLoading, sendMessage, clearMessages } = useAIMentor();
@@ -37,6 +53,26 @@ export function AIMentorChat({ symbol, currentPrice, userAsset, userPosition }: 
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
+  // Build enhanced context for AI
+  const enhancedContext = useMemo(() => {
+    const parts: string[] = [];
+    
+    if (userAsset) {
+      parts.push(`현재 보유 자산: $${userAsset.toLocaleString()}`);
+    }
+    
+    if (allPositions.length > 0) {
+      const positionSummary = allPositions.map(p => 
+        `${p.symbol} ${p.type} ${p.leverage}x (${p.pnlPercent !== undefined ? (p.pnlPercent >= 0 ? '+' : '') + p.pnlPercent.toFixed(1) + '%' : '진행중'})`
+      ).join(', ');
+      parts.push(`보유 포지션: ${positionSummary}`);
+    }
+    
+    parts.push(`시장 분위기: ${marketSentiment === 'bullish' ? '강세' : marketSentiment === 'bearish' ? '약세' : '중립'}`);
+    
+    return parts.join(' | ');
+  }, [userAsset, allPositions, marketSentiment]);
+
   const handleSend = (text?: string) => {
     const messageText = text || input.trim();
     if (!messageText || isLoading) return;
@@ -45,7 +81,7 @@ export function AIMentorChat({ symbol, currentPrice, userAsset, userPosition }: 
       symbol,
       currentPrice,
       position: userPosition,
-      context: userAsset ? `현재 보유 자산: $${userAsset.toLocaleString()}` : undefined,
+      context: enhancedContext,
     });
     setInput('');
   };
@@ -82,7 +118,7 @@ export function AIMentorChat({ symbol, currentPrice, userAsset, userPosition }: 
             initial={{ opacity: 0, y: 20, scale: 0.95 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 20, scale: 0.95 }}
-            className="fixed bottom-6 right-6 z-50 w-96 max-w-[calc(100vw-3rem)] h-[600px] max-h-[calc(100vh-6rem)] flex flex-col bg-card border border-border rounded-2xl shadow-2xl overflow-hidden"
+            className="fixed bottom-6 right-6 z-50 w-[420px] max-w-[calc(100vw-3rem)] h-[650px] max-h-[calc(100vh-6rem)] flex flex-col bg-card border border-border rounded-2xl shadow-2xl overflow-hidden"
           >
             {/* Header */}
             <div className="flex items-center justify-between p-4 border-b border-border bg-accent/30">
@@ -112,6 +148,33 @@ export function AIMentorChat({ symbol, currentPrice, userAsset, userPosition }: 
               </div>
             </div>
 
+            {/* Context Bar */}
+            <div className="px-4 py-2 bg-accent/20 border-b border-border flex items-center gap-4 text-xs">
+              {userAsset && (
+                <div className="flex items-center gap-1">
+                  <Wallet className="w-3 h-3 text-primary" />
+                  <span className="text-muted-foreground">자산:</span>
+                  <span className="font-mono">${userAsset.toLocaleString()}</span>
+                </div>
+              )}
+              {userPosition && (
+                <div className="flex items-center gap-1">
+                  <BarChart3 className="w-3 h-3 text-primary" />
+                  <span className={cn(
+                    "font-semibold",
+                    userPosition.type === 'LONG' ? 'text-long' : 'text-short'
+                  )}>
+                    {userPosition.type} {userPosition.leverage}x
+                  </span>
+                </div>
+              )}
+              {allPositions.length > 0 && !userPosition && (
+                <div className="flex items-center gap-1">
+                  <AlertCircle className="w-3 h-3 text-muted-foreground" />
+                  <span className="text-muted-foreground">{allPositions.length}개 포지션 보유중</span>
+                </div>
+              )}
+            </div>
             {/* Messages */}
             <div className="flex-1 overflow-y-auto p-4 space-y-4 scrollbar-thin">
               {messages.length === 0 && (

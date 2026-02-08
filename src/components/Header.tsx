@@ -1,6 +1,6 @@
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
-import { Zap, TrendingUp, Activity, BarChart3, Wifi, WifiOff, HelpCircle, Wallet } from 'lucide-react';
+import { Zap, TrendingUp, Activity, BarChart3, Wifi, WifiOff, HelpCircle, Wallet, Bot, Settings } from 'lucide-react';
 import {
   Tooltip,
   TooltipContent,
@@ -18,7 +18,7 @@ interface HeaderProps {
 
 export function Header({ totalWinRate, totalPnL, totalSignals, isConnected = true, onOpenPerformance }: HeaderProps) {
   return (
-    <header className="border-b border-border bg-card/50 backdrop-blur-sm">
+    <header className="sticky top-0 z-50 border-b border-border bg-card/95 backdrop-blur-sm">
       <div className="px-6 py-4 flex items-center justify-between">
         <div className="flex items-center gap-4">
           <motion.div
@@ -26,26 +26,42 @@ export function Header({ totalWinRate, totalPnL, totalSignals, isConnected = tru
             animate={{ opacity: 1, scale: 1 }}
             className="flex items-center gap-2"
           >
-            <div className="relative">
-              <Zap className="w-8 h-8 text-primary" />
-              <span className="absolute -bottom-1 -right-1 w-3 h-3 rounded-full bg-long animate-pulse" />
-            </div>
-            <div>
-              <h1 className="text-xl font-bold tracking-tight">
-                LEAD MASTER<span className="text-primary">: CRYPTO</span>
-              </h1>
-              <p className="text-xs text-muted-foreground">
-                AI가 당신의 롱/숏을 리드합니다
-              </p>
-            </div>
+            <Link to="/" className="flex items-center gap-2">
+              <div className="relative">
+                <Zap className="w-8 h-8 text-primary" />
+                <span className="absolute -bottom-1 -right-1 w-3 h-3 rounded-full bg-long animate-pulse" />
+              </div>
+              <div>
+                <h1 className="text-xl font-bold tracking-tight">
+                  LEAD MASTER<span className="text-primary">: CRYPTO</span>
+                </h1>
+                <p className="text-xs text-muted-foreground">
+                  AI가 당신의 롱/숏을 리드합니다
+                </p>
+              </div>
+            </Link>
           </motion.div>
         </div>
 
         <div className="flex items-center gap-3">
+          {/* AI Mentor Asset Link */}
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+          >
+            <Link to="/ai-mentor">
+              <Button variant="outline" size="sm" className="gap-2">
+                <Bot className="w-4 h-4" />
+                AI 멘토
+              </Button>
+            </Link>
+          </motion.div>
+
           {/* My Positions Link */}
           <motion.div
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.05 }}
           >
             <Link to="/positions">
               <Button variant="outline" size="sm" className="gap-2">

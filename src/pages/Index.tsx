@@ -87,13 +87,16 @@ const Index = () => {
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
-      <Header 
-        totalWinRate={aiStatsForPerformance.winRate} 
-        totalPnL={aiStatsForPerformance.totalPnL} 
-        totalSignals={aiStatsForPerformance.completedSignals}
-        isConnected={isConnected}
-        onOpenPerformance={() => setIsPerformanceOpen(true)}
-      />
+      {/* Sticky Header */}
+      <div className="sticky top-0 z-50">
+        <Header 
+          totalWinRate={aiStatsForPerformance.winRate} 
+          totalPnL={aiStatsForPerformance.totalPnL} 
+          totalSignals={aiStatsForPerformance.completedSignals}
+          isConnected={isConnected}
+          onOpenPerformance={() => setIsPerformanceOpen(true)}
+        />
+      </div>
       
       <div className="flex-1 flex overflow-hidden">
         {/* Left Sidebar - Coin List */}
@@ -205,6 +208,12 @@ const Index = () => {
             stopLoss: activeUserPosition.stopLoss,
             leverage: activeUserPosition.leverage,
           } : undefined}
+          allPositions={positions.filter(p => p.status === 'ACTIVE').map(p => ({
+            symbol: p.symbol,
+            type: p.position,
+            entryPrice: p.entryPrice,
+            leverage: p.leverage,
+          }))}
         />
       )}
 

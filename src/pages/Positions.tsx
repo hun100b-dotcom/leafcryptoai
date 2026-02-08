@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
+import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Header } from '@/components/Header';
 import { Footer } from '@/components/Footer';
 import { PositionsList } from '@/components/positions/PositionsList';
 import { AddPositionModal } from '@/components/positions/AddPositionModal';
@@ -12,12 +12,14 @@ import { useAISignals } from '@/hooks/useAISignals';
 import { useBinancePrices } from '@/hooks/useBinancePrices';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
-import { Bot, User, Plus } from 'lucide-react';
+import { Bot, User, Plus, ArrowLeft, Wallet, Filter } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
 
 const Positions = () => {
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isJoinModalOpen, setIsJoinModalOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<'ai' | 'manual'>('ai');
+  const [filter, setFilter] = useState<'all' | 'active' | 'win' | 'loss'>('all');
 
   const { 
     positions: userPositions, 
@@ -70,18 +72,80 @@ const Positions = () => {
     refetchSignals();
   };
 
+  // Filter positions
+  const filteredUserPositions = useMemo(() => {
+    return userPositions.filter(p => {
+      if (filter === 'all') return true;
+      if (filter === 'active') return p.status === 'ACTIVE';
+      if (filter === 'win') return p.status === 'WIN';
+      if (filter === 'loss') return p.status === 'LOSS';
+      return true;
+    });
+  }, [userPositions, filter]);
+
+  const filteredAIPositions = useMemo(() => {
+    return aiPositions.filter(p => {
+      if (filter === 'all') return true;
+      if (filter === 'active') return p.status === 'ACTIVE';
+      if (filter === 'win') return p.status === 'WIN';
+      if (filter === 'loss') return p.status === 'LOSS';
+      return true;
+    });
+  }, [aiPositions, filter]);
+
   // Active signals available to join
   const availableSignals = aiSignals.filter(s => s.status === 'ACTIVE');
 
+  // Count for filters
+  const getFilterCounts = (positions: { status: string }[]) => ({
+    all: positions.length,
+    active: positions.filter(p => p.status === 'ACTIVE').length,
+    win: positions.filter(p => p.status === 'WIN').length,
+    loss: positions.filter(p => p.status === 'LOSS').length,
+  });
+
+  const currentPositions = activeTab === 'ai' ? aiPositions : userPositions;
+  const filterCounts = getFilterCounts(currentPositions);
+
   return (
     <div className="min-h-screen flex flex-col bg-background">
-      <Header 
-        totalWinRate={Math.round(signalStats.winRate)} 
-        totalPnL={Math.round(signalStats.totalPnl * 10) / 10} 
-        totalSignals={signalStats.totalSignals}
-        isConnected={true}
-        onOpenPerformance={() => {}}
-      />
+      {/* Sticky Header */}
+      <header className="sticky top-0 z-50 border-b border-border bg-card/95 backdrop-blur-sm">
+        <div className="container max-w-6xl mx-auto px-4 py-4 flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <Link to="/">
+              <Button variant="ghost" size="sm" className="gap-2">
+                <ArrowLeft className="w-4 h-4" />
+                대시보드로 돌아가기
+              </Button>
+            </Link>
+            <div className="flex items-center gap-2">
+              <Wallet className="w-5 h-5 text-primary" />
+              <h1 className="text-lg font-bold">내 포지션</h1>
+            </div>
+          </div>
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              onClick={() => setIsJoinModalOpen(true)}
+              disabled={availableSignals.length === 0}
+              className="gap-2"
+            >
+              <Bot className="w-4 h-4" />
+              AI 시그널 참여
+              {availableSignals.length > 0 && (
+                <span className="bg-primary text-primary-foreground text-xs px-1.5 py-0.5 rounded-full">
+                  {availableSignals.length}
+                </span>
+              )}
+            </Button>
+            <Button onClick={() => setIsAddModalOpen(true)} className="gap-2">
+              <Plus className="w-4 h-4" />
+              직접 진입
+            </Button>
+          </div>
+        </div>
+      </header>
 
       <main className="flex-1 container max-w-6xl mx-auto px-4 py-8">
         <motion.div
@@ -89,35 +153,6 @@ const Positions = () => {
           animate={{ opacity: 1, y: 0 }}
           className="space-y-6"
         >
-          {/* Page Header */}
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-3xl font-bold">내 포지션</h1>
-              <p className="text-muted-foreground mt-1">
-                AI와 함께 진입하거나 직접 포지션을 관리하세요
-              </p>
-            </div>
-            <div className="flex gap-2">
-              <Button
-                variant="outline"
-                onClick={() => setIsJoinModalOpen(true)}
-                disabled={availableSignals.length === 0}
-                className="gap-2"
-              >
-                <Bot className="w-4 h-4" />
-                AI 시그널 참여
-                {availableSignals.length > 0 && (
-                  <span className="bg-primary text-primary-foreground text-xs px-1.5 py-0.5 rounded-full">
-                    {availableSignals.length}
-                  </span>
-                )}
-              </Button>
-              <Button onClick={() => setIsAddModalOpen(true)} className="gap-2">
-                <Plus className="w-4 h-4" />
-                직접 진입
-              </Button>
-            </div>
-          </div>
 
           {/* Stats Overview with Real-time Data */}
           <PositionStats
@@ -130,8 +165,35 @@ const Positions = () => {
             onRefetch={handleRefetchAll}
           />
 
+          {/* Filters */}
+          <div className="flex items-center gap-2 flex-wrap">
+            <Filter className="w-4 h-4 text-muted-foreground" />
+            {[
+              { key: 'all' as const, label: '전체' },
+              { key: 'active' as const, label: '진행 중' },
+              { key: 'win' as const, label: '수익' },
+              { key: 'loss' as const, label: '손절' },
+            ].map(item => (
+              <Button
+                key={item.key}
+                variant={filter === item.key ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setFilter(item.key)}
+                className="gap-1"
+              >
+                {item.label}
+                <Badge 
+                  variant={filter === item.key ? 'secondary' : 'outline'} 
+                  className="ml-1 text-xs"
+                >
+                  {filterCounts[item.key]}
+                </Badge>
+              </Button>
+            ))}
+          </div>
+
           {/* Position Tabs */}
-          <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'ai' | 'manual')}>
+          <Tabs value={activeTab} onValueChange={(v) => { setActiveTab(v as 'ai' | 'manual'); setFilter('all'); }}>
             <TabsList className="grid w-full max-w-md grid-cols-2">
               <TabsTrigger value="ai" className="gap-2">
                 <Bot className="w-4 h-4" />
@@ -152,7 +214,7 @@ const Positions = () => {
             <TabsContent value="ai" className="mt-6">
               <PositionsList
                 type="ai"
-                positions={aiPositions}
+                positions={filteredAIPositions}
                 getPrice={getPrice}
                 onLeave={leaveSignal}
               />
@@ -161,7 +223,7 @@ const Positions = () => {
             <TabsContent value="manual" className="mt-6">
               <PositionsList
                 type="manual"
-                positions={userPositions}
+                positions={filteredUserPositions}
                 getPrice={getPrice}
                 onClose={closePosition}
                 onDelete={deletePosition}

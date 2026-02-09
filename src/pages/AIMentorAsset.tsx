@@ -25,9 +25,10 @@ import ReactMarkdown from 'react-markdown';
 const AI_INITIAL_SEED = 1000; // $1,000 starting capital
 
 export default function AIMentorAsset() {
-  const { signals, stats, reviews } = useAISignals();
+  const { signals, stats, reviews, refetch } = useAISignals();
   const { settings } = useUserPositions();
   const [showSettings, setShowSettings] = useState(false);
+  const [isGeneratingReview, setIsGeneratingReview] = useState(false);
 
   // Calculate AI's virtual asset based on trading history
   const aiAssetData = useMemo(() => {

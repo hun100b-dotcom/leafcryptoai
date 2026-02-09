@@ -1,13 +1,15 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { 
   ArrowLeft, Bot, TrendingUp, TrendingDown, Award, Brain, 
-  Target, Zap, Trophy, Star, ChevronUp, BookOpen, Settings
+  Target, Zap, Trophy, Star, ChevronUp, BookOpen, Settings,
+  RefreshCw, Loader2, CheckCircle2, XCircle
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
 import { useAISignals } from '@/hooks/useAISignals';
 import { useUserPositions } from '@/hooks/useUserPositions';
 import { AIGrowthChart } from '@/components/ai-mentor/AIGrowthChart';
@@ -16,6 +18,9 @@ import { AILearningLog } from '@/components/ai-mentor/AILearningLog';
 import { WhitelistSettings } from '@/components/ai-mentor/WhitelistSettings';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { cn } from '@/lib/utils';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
+import ReactMarkdown from 'react-markdown';
 
 const AI_INITIAL_SEED = 1000; // $1,000 starting capital
 

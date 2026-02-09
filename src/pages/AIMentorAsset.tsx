@@ -478,6 +478,7 @@ export default function AIMentorAsset() {
                   </CardContent>
                 </Card>
               )}
+            </div>
           </TabsContent>
         </Tabs>
 

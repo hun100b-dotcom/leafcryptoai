@@ -478,9 +478,6 @@ export default function AIMentorAsset() {
                   </CardContent>
                 </Card>
               )}
-            </div>
-              </CardContent>
-            </Card>
           </TabsContent>
         </Tabs>
 

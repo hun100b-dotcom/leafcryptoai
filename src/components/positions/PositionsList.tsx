@@ -241,6 +241,11 @@ function PositionCard({
     }
   }
 
+
+  // Calculate dollar P&L (based on 10% margin of assumed $1000 initial asset)
+  const marginAmount = 1000 * MARGIN_PERCENT; // $100 per position
+  const pnlDollar = marginAmount * (pnl / 100);
+
   const getStatusIcon = () => {
     switch (position.status) {
       case 'WIN':

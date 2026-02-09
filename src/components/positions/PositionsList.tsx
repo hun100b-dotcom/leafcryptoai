@@ -222,6 +222,9 @@ function PositionCard({
   const isLong = posType === 'LONG';
   const isActive = position.status === 'ACTIVE';
 
+  // Assume 10% of initial asset as margin per position
+  const MARGIN_PERCENT = 0.1;
+
   // Calculate real-time PnL
   let pnl = 0;
   if (isActive && currentPrice) {

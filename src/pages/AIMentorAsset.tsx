@@ -90,6 +90,29 @@ export default function AIMentorAsset() {
     return Math.min(baseLevel + tradesBonus + reviewBonus + performanceBonus, 100);
   }, [aiAssetData, stats]);
 
+  // Trigger self-review
+  const handleGenerateReview = async () => {
+    setIsGeneratingReview(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('ai-self-review');
+      if (error) throw error;
+      toast.success('AI 자기 복기가 생성되었습니다');
+      await refetch();
+    } catch (err) {
+      console.error('Failed to generate review:', err);
+      toast.error('복기 생성에 실패했습니다');
+    } finally {
+      setIsGeneratingReview(false);
+    }
+  };
+
+  // Get completed signals for per-trade review
+  const completedSignals = useMemo(() => 
+    signals.filter(s => s.status === 'WIN' || s.status === 'LOSS')
+      .sort((a, b) => new Date(b.closedAt || b.createdAt).getTime() - new Date(a.closedAt || a.createdAt).getTime()),
+    [signals]
+  );
+
   return (
     <div className="min-h-screen bg-background">
       {/* Sticky Header */}

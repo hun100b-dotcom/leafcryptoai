@@ -222,6 +222,9 @@ function PositionCard({
   const isLong = posType === 'LONG';
   const isActive = position.status === 'ACTIVE';
 
+  // Assume 10% of initial asset as margin per position
+  const MARGIN_PERCENT = 0.1;
+
   // Calculate real-time PnL
   let pnl = 0;
   if (isActive && currentPrice) {
@@ -237,6 +240,11 @@ function PositionCard({
         : ((entryPrice - closePrice) / entryPrice) * 100 * leverage;
     }
   }
+
+
+  // Calculate dollar P&L (based on 10% margin of assumed $1000 initial asset)
+  const marginAmount = 1000 * MARGIN_PERCENT; // $100 per position
+  const pnlDollar = marginAmount * (pnl / 100);
 
   const getStatusIcon = () => {
     switch (position.status) {
@@ -266,7 +274,7 @@ function PositionCard({
       )}
     >
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3">
           {getStatusIcon()}
           <div>
             <div className="flex items-center gap-2">
@@ -288,7 +296,13 @@ function PositionCard({
               {isActive && currentPrice && (
                 <>
                   <span>→</span>
-                  <span>현재: ${currentPrice.toLocaleString()}</span>
+                  <span className="font-mono">현재: ${currentPrice.toLocaleString()}</span>
+                </>
+              )}
+              {!isActive && position.closePrice && (
+                <>
+                  <span>→</span>
+                  <span className="font-mono">종료: ${position.closePrice.toLocaleString()}</span>
                 </>
               )}
             </div>
@@ -303,6 +317,12 @@ function PositionCard({
               pnl >= 0 ? "text-long" : "text-short"
             )}>
               {pnl >= 0 ? '+' : ''}{pnl.toFixed(2)}%
+            </p>
+            <p className={cn(
+              "text-sm font-semibold",
+              pnlDollar >= 0 ? "text-long" : "text-short"
+            )}>
+              {pnlDollar >= 0 ? '+' : ''}${Math.abs(pnlDollar).toFixed(2)}
             </p>
             <p className="text-xs text-muted-foreground">
               {formatDistanceToNow(position.createdAt, { addSuffix: true, locale: ko })}

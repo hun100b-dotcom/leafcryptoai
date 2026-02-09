@@ -36,15 +36,13 @@ export function useUserPositions() {
     
     let closedPnL = 0;
     positions.forEach(pos => {
-      if (pos.status === 'WIN') {
+      if (pos.status === 'WIN' || pos.status === 'LOSS') {
+        // Use actual close_price if available, otherwise fall back to target/stop
+        const exitPrice = pos.closePrice 
+          ?? (pos.status === 'WIN' ? pos.targetPrice : pos.stopLoss);
         const pnl = pos.position === 'LONG'
-          ? ((pos.targetPrice - pos.entryPrice) / pos.entryPrice) * 100 * pos.leverage
-          : ((pos.entryPrice - pos.targetPrice) / pos.entryPrice) * 100 * pos.leverage;
-        closedPnL += pnl;
-      } else if (pos.status === 'LOSS') {
-        const pnl = pos.position === 'LONG'
-          ? ((pos.stopLoss - pos.entryPrice) / pos.entryPrice) * 100 * pos.leverage
-          : ((pos.entryPrice - pos.stopLoss) / pos.entryPrice) * 100 * pos.leverage;
+          ? ((exitPrice - pos.entryPrice) / pos.entryPrice) * 100 * pos.leverage
+          : ((pos.entryPrice - exitPrice) / pos.entryPrice) * 100 * pos.leverage;
         closedPnL += pnl;
       }
     });

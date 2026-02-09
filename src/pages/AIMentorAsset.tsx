@@ -299,46 +299,186 @@ export default function AIMentorAsset() {
           </TabsContent>
 
           <TabsContent value="reviews">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Brain className="w-5 h-5 text-violet-500" />
-                  AI 자기 복기 기록
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {reviews.length === 0 ? (
-                  <p className="text-center text-muted-foreground py-8">
-                    아직 복기 기록이 없습니다
-                  </p>
-                ) : (
-                  reviews.map((review) => (
-                    <div 
-                      key={review.id} 
-                      className="p-4 rounded-lg bg-accent/50 border border-border space-y-2"
-                    >
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm font-semibold">
-                          {review.periodStart.toLocaleDateString()} ~ {review.periodEnd.toLocaleDateString()}
-                        </span>
-                        {review.winRateThisPeriod !== null && (
-                          <span className={cn(
-                            "text-sm font-mono",
-                            review.winRateThisPeriod >= 50 ? "text-long" : "text-short"
-                          )}>
-                            승률 {review.winRateThisPeriod.toFixed(1)}%
-                          </span>
-                        )}
-                      </div>
-                      <p className="text-sm text-foreground/90">{review.reviewContent}</p>
-                      {review.lessonsLearned && (
-                        <div className="text-xs bg-primary/10 rounded p-2">
-                          💡 {review.lessonsLearned}
-                        </div>
-                      )}
+            <div className="space-y-6">
+              {/* Generate Review Button */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Brain className="w-5 h-5 text-violet-500" />
+                      AI 자기 복기 기록
                     </div>
-                  ))
-                )}
+                    <Button 
+                      size="sm" 
+                      onClick={handleGenerateReview}
+                      disabled={isGeneratingReview}
+                      className="gap-2"
+                    >
+                      {isGeneratingReview ? (
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                      ) : (
+                        <RefreshCw className="w-4 h-4" />
+                      )}
+                      복기 생성
+                    </Button>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                  {/* Reviews - Overall Summary */}
+                  {reviews.length === 0 ? (
+                    <div className="text-center py-8">
+                      <Brain className="w-12 h-12 text-muted-foreground mx-auto mb-3 opacity-50" />
+                      <p className="text-muted-foreground mb-2">아직 복기 기록이 없습니다</p>
+                      <p className="text-xs text-muted-foreground">상단 "복기 생성" 버튼을 눌러 AI가 최근 거래를 분석하도록 하세요.</p>
+                    </div>
+                  ) : (
+                    reviews.map((review) => (
+                      <div 
+                        key={review.id} 
+                        className="p-5 rounded-lg bg-gradient-to-br from-violet-500/5 to-primary/5 border border-violet-500/20 space-y-4"
+                      >
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <Bot className="w-5 h-5 text-violet-500" />
+                            <span className="font-semibold text-violet-500">AI 멘토 총평</span>
+                          </div>
+                          <div className="flex items-center gap-3">
+                            {review.winRateThisPeriod !== null && (
+                              <Badge variant="outline" className={cn(
+                                review.winRateThisPeriod >= 50 ? "border-long text-long" : "border-short text-short"
+                              )}>
+                                승률 {review.winRateThisPeriod.toFixed(1)}%
+                              </Badge>
+                            )}
+                            <span className="text-xs text-muted-foreground">
+                              {review.periodStart.toLocaleDateString('ko-KR')} ~ {review.periodEnd.toLocaleDateString('ko-KR')}
+                            </span>
+                          </div>
+                        </div>
+                        
+                        {/* Review Content in Markdown */}
+                        <div className="prose prose-sm prose-invert max-w-none text-sm text-foreground/90 leading-relaxed">
+                          <ReactMarkdown>{review.reviewContent}</ReactMarkdown>
+                        </div>
+
+                        {/* What went well & what to improve side by side */}
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                          {review.whatWentWell && (
+                            <div className="p-3 rounded-lg bg-long/5 border border-long/20">
+                              <p className="text-xs font-semibold text-long mb-1 flex items-center gap-1">
+                                <CheckCircle2 className="w-3 h-3" /> 잘한 점
+                              </p>
+                              <p className="text-xs text-foreground/80">{review.whatWentWell}</p>
+                            </div>
+                          )}
+                          {review.whatToImprove && (
+                            <div className="p-3 rounded-lg bg-short/5 border border-short/20">
+                              <p className="text-xs font-semibold text-short mb-1 flex items-center gap-1">
+                                <XCircle className="w-3 h-3" /> 개선할 점
+                              </p>
+                              <p className="text-xs text-foreground/80">{review.whatToImprove}</p>
+                            </div>
+                          )}
+                        </div>
+
+                        {review.lessonsLearned && (
+                          <div className="p-3 rounded-lg bg-primary/5 border border-primary/20">
+                            <p className="text-xs font-semibold text-primary mb-1 flex items-center gap-1">
+                              💡 깨달은 점 & 학습 내용
+                            </p>
+                            <p className="text-xs text-foreground/80">{review.lessonsLearned}</p>
+                          </div>
+                        )}
+
+                        <p className="text-[10px] text-muted-foreground/60 text-right">
+                          분석 대상: {review.signalsReviewed}건의 거래
+                        </p>
+                      </div>
+                    ))
+                  )}
+                </CardContent>
+              </Card>
+
+              {/* Per-Trade Review Section */}
+              {completedSignals.length > 0 && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2 text-base">
+                      <Target className="w-5 h-5 text-primary" />
+                      포지션별 복기 기록 ({completedSignals.length}건)
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-3 max-h-[600px] overflow-y-auto">
+                    {completedSignals.map((signal) => {
+                      const pnl = signal.pnlPercent || 0;
+                      const isWin = signal.status === 'WIN';
+                      const entryDate = signal.createdAt.toLocaleDateString('ko-KR');
+                      const closeDate = signal.closedAt?.toLocaleDateString('ko-KR') || '';
+                      
+                      return (
+                        <div
+                          key={signal.id}
+                          className={cn(
+                            "p-4 rounded-lg border-l-4",
+                            isWin ? "border-l-long bg-long/5 border border-long/10" : "border-l-short bg-short/5 border border-short/10"
+                          )}
+                        >
+                          <div className="flex items-center justify-between mb-2">
+                            <div className="flex items-center gap-2">
+                              {isWin ? <CheckCircle2 className="w-4 h-4 text-long" /> : <XCircle className="w-4 h-4 text-short" />}
+                              <span className="font-bold">{signal.symbol}</span>
+                              <Badge variant="outline" className={cn(
+                                "text-[10px]",
+                                signal.position === 'LONG' ? 'text-long border-long' : 'text-short border-short'
+                              )}>
+                                {signal.position} {signal.leverage}x
+                              </Badge>
+                            </div>
+                            <span className={cn(
+                              "font-bold font-mono",
+                              pnl >= 0 ? "text-long" : "text-short"
+                            )}>
+                              {pnl >= 0 ? '+' : ''}{pnl.toFixed(2)}%
+                            </span>
+                          </div>
+
+                          <div className="grid grid-cols-3 gap-2 text-xs text-muted-foreground mb-2">
+                            <div>
+                              <span className="text-muted-foreground/60">진입가</span>
+                              <p className="font-mono">${signal.entryPrice.toLocaleString()}</p>
+                            </div>
+                            <div>
+                              <span className="text-muted-foreground/60">종료가</span>
+                              <p className="font-mono">${signal.closePrice?.toLocaleString() || '-'}</p>
+                            </div>
+                            <div>
+                              <span className="text-muted-foreground/60">기간</span>
+                              <p>{entryDate} ~ {closeDate}</p>
+                            </div>
+                          </div>
+
+                          {signal.evidenceReasoning && (
+                            <div className="p-2 rounded bg-accent/50 text-xs text-muted-foreground">
+                              <span className="font-semibold text-foreground">진입 근거: </span>
+                              {signal.evidenceReasoning}
+                            </div>
+                          )}
+
+                          <div className="mt-2 pt-2 border-t border-border">
+                            <div className="flex items-center gap-2 text-xs">
+                              <Brain className="w-3 h-3 text-violet-500" />
+                              <span className="text-violet-500">
+                                이 거래로 AI 지능이 +0.5% 향상되었습니다
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </CardContent>
+                </Card>
+              )}
+            </div>
               </CardContent>
             </Card>
           </TabsContent>

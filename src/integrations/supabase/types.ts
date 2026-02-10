@@ -404,6 +404,7 @@ export type Database = {
           initial_asset: number
           updated_at: string
           user_id: string
+          whitelist_coins: string[] | null
         }
         Insert: {
           created_at?: string
@@ -411,6 +412,7 @@ export type Database = {
           initial_asset?: number
           updated_at?: string
           user_id: string
+          whitelist_coins?: string[] | null
         }
         Update: {
           created_at?: string
@@ -418,6 +420,7 @@ export type Database = {
           initial_asset?: number
           updated_at?: string
           user_id?: string
+          whitelist_coins?: string[] | null
         }
         Relationships: []
       }

@@ -60,7 +60,14 @@ export function useUserPositions() {
   // Function to calculate real-time stats with live prices
   const calculateRealTimeStats = useCallback((
     priceGetter: (symbol: string) => number | undefined,
-    aiPositions?: { allocatedAsset: number; entryPrice: number; signal?: { symbol: string; position: 'LONG' | 'SHORT'; leverage: number } }[]
+    aiPositions?: { 
+      allocatedAsset: number; 
+      entryPrice: number; 
+      status: string;
+      closePrice?: number;
+      currentPnl?: number;
+      signal?: { symbol: string; position: 'LONG' | 'SHORT'; leverage: number } 
+    }[]
   ) => {
     const baseStats = getBaseStats();
     const marginPercent = 0.1; // 10% of initial asset per position
@@ -82,38 +89,59 @@ export function useUserPositions() {
       }
     });
 
-    // Calculate unrealized P&L for AI positions
+    // Calculate AI positions P&L (both active and closed)
     let unrealizedAIPnL = 0;
     let activeAIMargin = 0;
+    let closedAIPnL = 0;
+    let aiWins = 0;
+    let aiLosses = 0;
     
     if (aiPositions) {
       aiPositions.forEach(pos => {
-        if (pos.signal) {
-          const currentPrice = priceGetter(pos.signal.symbol);
-          if (currentPrice) {
-            const pnlPercent = pos.signal.position === 'LONG'
-              ? ((currentPrice - pos.entryPrice) / pos.entryPrice) * 100 * pos.signal.leverage
-              : ((pos.entryPrice - currentPrice) / pos.entryPrice) * 100 * pos.signal.leverage;
-            
-            activeAIMargin += pos.allocatedAsset;
-            unrealizedAIPnL += pos.allocatedAsset * (pnlPercent / 100);
+        if (pos.status === 'ACTIVE') {
+          // Active AI positions: unrealized P&L
+          if (pos.signal) {
+            const currentPrice = priceGetter(pos.signal.symbol);
+            if (currentPrice) {
+              const pnlPercent = pos.signal.position === 'LONG'
+                ? ((currentPrice - pos.entryPrice) / pos.entryPrice) * 100 * pos.signal.leverage
+                : ((pos.entryPrice - currentPrice) / pos.entryPrice) * 100 * pos.signal.leverage;
+              
+              activeAIMargin += pos.allocatedAsset;
+              unrealizedAIPnL += pos.allocatedAsset * (pnlPercent / 100);
+            }
           }
+        } else if (pos.status === 'WIN' || pos.status === 'LOSS' || pos.status === 'CANCELLED') {
+          // Closed AI positions: confirmed P&L
+          if (pos.currentPnl !== undefined && pos.currentPnl !== null) {
+            closedAIPnL += pos.allocatedAsset * (pos.currentPnl / 100);
+          }
+          if (pos.status === 'WIN') aiWins++;
+          if (pos.status === 'LOSS') aiLosses++;
         }
       });
     }
 
-    // Calculate closed P&L in dollar amount
-    const closedPnLAmount = settings.initialAsset * (baseStats.closedPnL / 100);
+    // Calculate closed manual P&L in dollar amount
+    const closedManualPnLAmount = settings.initialAsset * (baseStats.closedPnL / 100);
     
-    // Total current asset = initial + closed P&L + unrealized P&L
+    // Total current asset = initial + closed manual P&L + closed AI P&L + unrealized P&L
     const totalUnrealizedPnL = unrealizedManualPnL + unrealizedAIPnL;
-    const currentAsset = settings.initialAsset + closedPnLAmount + totalUnrealizedPnL;
+    const currentAsset = settings.initialAsset + closedManualPnLAmount + closedAIPnL + totalUnrealizedPnL;
     const totalPnLPercent = settings.initialAsset > 0 
       ? ((currentAsset - settings.initialAsset) / settings.initialAsset) * 100 
       : 0;
 
+    // Combine manual + AI wins/losses
+    const totalWins = baseStats.wins + aiWins;
+    const totalLosses = baseStats.losses + aiLosses;
+    const totalCompleted = totalWins + totalLosses;
+
     return {
       ...baseStats,
+      wins: totalWins,
+      losses: totalLosses,
+      winRate: totalCompleted > 0 ? Math.round((totalWins / totalCompleted) * 100) : 0,
       totalPnL: Math.round(totalPnLPercent * 10) / 10,
       currentAsset: Math.round(currentAsset * 100) / 100,
       unrealizedPnL: Math.round(totalUnrealizedPnL * 100) / 100,

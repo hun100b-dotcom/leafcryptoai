@@ -15,37 +15,37 @@ interface SentimentGaugeProps {
   events?: EventItem[];
 }
 
-// Major crypto events
+// Major crypto events - verified real dates
 const MAJOR_EVENTS: (EventItem & { description: string; impact: string })[] = [
   {
-    id: 'fomc-2026-02',
-    coin: 'ALL',
-    type: 'CONFERENCE',
-    title: 'FOMC 금리 결정 회의',
-    timestamp: new Date('2026-02-12T19:00:00Z'),
-    url: 'https://www.federalreserve.gov/monetarypolicy/fomccalendars.htm',
-    description: '미국 연방준비제도(Fed)의 기준 금리 결정 회의. 금리 인하 시 위험 자산(암호화폐 포함) 상승 유도, 금리 동결/인상 시 하락 압력.',
-    impact: '금리 동결 예상. 파월 의장의 발언 톤에 따라 변동성 확대 가능. 매파적 발언 시 단기 하락, 비둘기파적 발언 시 상승 모멘텀 기대.',
-  },
-  {
-    id: 'eth-dencun',
+    id: 'ethdenver-2026',
     coin: 'ETH',
     type: 'CONFERENCE',
-    title: 'Ethereum Foundation AMA',
-    timestamp: new Date('2026-02-15T14:00:00Z'),
-    url: 'https://ethereum.org',
-    description: '이더리움 재단 공식 AMA(Ask Me Anything) 세션. 로드맵 업데이트, 신규 EIP 발표, 생태계 방향성 논의.',
-    impact: '이더리움 L2 확장 및 수수료 감소 관련 발표 예상. ETH 가격에 긍정적 영향 가능성 높으나, 기대에 못 미칠 경우 실망 매도 주의.',
+    title: 'ETHDenver 2026',
+    timestamp: new Date('2026-02-17T09:00:00-07:00'),
+    url: 'https://ethdenver.com/',
+    description: '세계 최대 이더리움 해커톤 & 컨퍼런스. 2월 17~21일 덴버에서 개최. Web3 빌더, DeFi, L2 생태계 주요 발표 및 BUIDLathon 진행.',
+    impact: 'ETH 및 L2 토큰(ARB, OP 등)에 긍정적 모멘텀 가능. 새로운 프로토콜 발표와 파트너십 소식에 주목. 이벤트 기간 중 ETH 거래량 증가 예상.',
   },
   {
-    id: 'btc-conference',
+    id: 'fomc-2026-03',
+    coin: 'ALL',
+    type: 'CONFERENCE',
+    title: 'FOMC 금리 결정 회의 (3월)',
+    timestamp: new Date('2026-03-17T14:00:00-04:00'),
+    url: 'https://www.federalreserve.gov/monetarypolicy/fomccalendars.htm',
+    description: '미국 연방준비제도(Fed) 2026년 두 번째 FOMC 회의 (3/17~18). 기준 금리 결정 및 경제 전망(SEP) 발표. 2월에는 FOMC 회의 없음.',
+    impact: '금리 방향과 파월 의장 기자회견 톤이 핵심. 매파적 발언 시 위험자산 하락 압력, 비둘기파적 발언 시 암호화폐 포함 위험자산 상승 기대.',
+  },
+  {
+    id: 'btc-2026-vegas',
     coin: 'BTC',
-    type: 'AMA',
+    type: 'CONFERENCE',
     title: 'Bitcoin 2026 Conference',
-    timestamp: new Date('2026-02-20T09:00:00Z'),
-    url: 'https://b.tc/conference',
-    description: '세계 최대 비트코인 컨퍼런스. 기관 투자, 규제, 기술 혁신 등 비트코인 생태계 전반에 대한 주요 발표 진행.',
-    impact: '기관 투자자 참여 확대 및 긍정적 규제 신호 발표 가능. 비트코인 현물 ETF 추가 승인 관련 논의가 핵심 이벤트.',
+    timestamp: new Date('2026-04-27T09:00:00-07:00'),
+    url: 'https://2026.b.tc/',
+    description: '세계 최대 비트코인 컨퍼런스. 4월 27~29일 라스베이거스 베네시안에서 개최. 4만명 이상 참가, 500+ 연사, 기관 투자 및 규제 논의.',
+    impact: '기관 투자자 참여 확대 및 규제 방향성 발표 가능. 비트코인 현물 ETF 관련 논의와 대형 파트너십 발표가 핵심 이벤트.',
   },
 ];
 

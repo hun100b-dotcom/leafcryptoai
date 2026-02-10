@@ -30,8 +30,24 @@ serve(async (req) => {
 
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    // 1. Binance에서 현재 가격 및 롱/숏 비율 가져오기
-    const symbols = ["BTCUSDT", "ETHUSDT", "SOLUSDT", "XRPUSDT", "DOGEUSDT"];
+    // 1. DB에서 화이트리스트 로드 후 Binance 데이터 가져오기
+    let whitelistCoins = ["BTC", "ETH", "SOL", "XRP", "DOGE"];
+    try {
+      const { data: settingsRows } = await supabase
+        .from("user_settings")
+        .select("whitelist_coins")
+        .limit(1)
+        .single();
+      
+      if (settingsRows?.whitelist_coins && Array.isArray(settingsRows.whitelist_coins) && settingsRows.whitelist_coins.length > 0) {
+        whitelistCoins = settingsRows.whitelist_coins;
+        console.log("Loaded whitelist from DB:", whitelistCoins);
+      }
+    } catch (e) {
+      console.log("Using default whitelist, DB read failed:", e);
+    }
+
+    const symbols = whitelistCoins.map(s => s + "USDT");
     
     const pricePromises = symbols.map(async (symbol) => {
       try {

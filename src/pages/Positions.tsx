@@ -53,17 +53,18 @@ const Positions = () => {
 
   const { getPrice } = useBinancePrices(allSymbols);
 
-  // Calculate real-time stats
+  // Calculate real-time stats (include all AI positions for closed P&L)
   const realTimeStats = useMemo(() => {
-    const activeAIPositions = aiPositions
-      .filter(p => p.status === 'ACTIVE')
-      .map(p => ({
-        allocatedAsset: p.allocatedAsset,
-        entryPrice: p.entryPrice,
-        signal: p.signal
-      }));
+    const allAIPositions = aiPositions.map(p => ({
+      allocatedAsset: p.allocatedAsset,
+      entryPrice: p.entryPrice,
+      status: p.status,
+      closePrice: p.closePrice,
+      currentPnl: p.currentPnl,
+      signal: p.signal
+    }));
     
-    return calculateRealTimeStats(getPrice, activeAIPositions);
+    return calculateRealTimeStats(getPrice, allAIPositions);
   }, [calculateRealTimeStats, getPrice, aiPositions]);
 
   // Handle refetch after reset

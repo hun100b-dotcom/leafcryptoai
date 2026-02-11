@@ -13,6 +13,7 @@ import { useBinancePrice } from '@/hooks/useBinancePrice';
 import { useSignals } from '@/hooks/useSignals';
 import { useAISignals } from '@/hooks/useAISignals';
 import { useUserPositions } from '@/hooks/useUserPositions';
+import { useBinanceLongShortRatio } from '@/hooks/useBinanceLongShortRatio';
 import { mockNews, mockEvents } from '@/data/mockData';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -34,6 +35,9 @@ const Index = () => {
   
   // User positions
   const { positions, stats: userStats, settings } = useUserPositions();
+
+  // Long/Short ratio for selected symbol
+  const { data: ratioData } = useBinanceLongShortRatio(selectedSymbol);
 
   const selectedCoin = useMemo(
     () => coins.find(c => c.symbol === selectedSymbol) || coins[0],
@@ -122,7 +126,7 @@ const Index = () => {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.1 }}
               >
-                <ActionCard coin={selectedCoin} activeAISignal={activeAISignal} />
+                <ActionCard coin={selectedCoin} activeAISignal={activeAISignal} longRatio={ratioData?.longRatio} />
               </motion.div>
 
               {/* TradingView Real Chart */}

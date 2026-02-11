@@ -6,6 +6,7 @@ import { Bot, TrendingUp, TrendingDown, Minus, CheckCircle2, XCircle, Clock, Zap
 import { formatDistanceToNow } from 'date-fns';
 import { ko } from 'date-fns/locale';
 import { JoinSignalButton } from './JoinSignalButton';
+import { SelfReflectingAnimation } from './SelfReflectingAnimation';
 import { Progress } from '@/components/ui/progress';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
@@ -87,7 +88,7 @@ export function AITimelineEnhanced({ signals, userAsset }: AITimelineEnhancedPro
             <span className="absolute -top-1 -right-1 w-1.5 h-1.5 rounded-full bg-long animate-pulse" />
           </div>
           <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-            AI 멘토 리딩
+            Leaf-Master 리딩
           </h2>
         </div>
         <Button
@@ -106,8 +107,11 @@ export function AITimelineEnhanced({ signals, userAsset }: AITimelineEnhancedPro
         </Button>
       </div>
 
+      {/* Self-Reflecting Animation */}
+      <SelfReflectingAnimation isActive={isRefreshing} className="mx-3 mt-3" />
+
       {/* No Entry Reason */}
-      {noEntryReason && (
+      {!isRefreshing && noEntryReason && (
         <div className="mx-3 mt-3 p-3 rounded-lg bg-yellow-500/10 border border-yellow-500/30 text-sm text-yellow-500">
           <div className="flex items-start gap-2">
             <Zap className="w-4 h-4 mt-0.5 flex-shrink-0" />

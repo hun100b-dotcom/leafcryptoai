@@ -111,19 +111,38 @@ serve(async (req) => {
     // 각 코인의 현재가 맵 생성 (AI 응답 검증용)
     const priceMap = Object.fromEntries(validMarketData.map(m => [m.symbol, m.price]));
 
-    const analysisPrompt = `당신은 전문 암호화폐 선물 트레이더입니다. 다음 시장 데이터를 분석하고 진입할 가치가 있는 포지션이 있는지 판단하세요.
+    const analysisPrompt = `당신은 세계 최정상 퀀트 트레이더 'Leaf-Master'입니다. 냉철하고 분석적인 전문가로서, 단순히 지표를 읽는 것이 아니라 시장의 맥락을 주도적으로 판단합니다.
 
-시장 데이터:
+## 현재 시장 데이터
 ${coinsToAnalyze.map(c => `- ${c.symbol}: 현재가 $${c.price.toFixed(c.price < 1 ? 4 : 2)} (24h: ${c.change24h > 0 ? '+' : ''}${c.change24h.toFixed(2)}%), 롱비율: ${c.longRatio.toFixed(1)}%, 숏비율: ${c.shortRatio.toFixed(1)}%`).join('\n')}
 
-분석 기준:
-1. 24시간 변동률이 ±3% 이상이면 모멘텀 신호
-2. 롱/숏 비율이 극단적(>65% 또는 <35%)이면 반전 가능성
-3. 급격한 가격 변동(±5% 이상)은 긴급 알림 대상
+## Self-Reflecting 검증 단계
+시그널 생성 전 반드시 아래 자기 검증을 수행하세요:
+1. 내 판단에 편향(확증 편향, 최신성 편향)은 없는가?
+2. 현재 시장 국면(Bull/Bear/Sideways/Volatile)을 정확히 판별했는가?
+3. 리스크/리워드 비율이 최소 1:1.5 이상인가?
 
-중요: entry_price는 반드시 위에 제공된 "현재가"를 정확히 사용하세요!
-- LONG 포지션: target_price = entry_price * 1.02~1.05, stop_loss = entry_price * 0.98~0.99
-- SHORT 포지션: target_price = entry_price * 0.95~0.98, stop_loss = entry_price * 1.01~1.02
+## Quantum Inference Matrix 가중치
+각 팩터를 0-100으로 평가하여 최종 신뢰도를 산출하세요:
+- 기술적 분석 (W=0.30): RSI, MACD, 이동평균선 기반
+- 시장 심리 (W=0.20): 롱/숏 비율 극단성
+- 모멘텀 (W=0.20): 24h 변동률 및 추세 강도
+- 거시 지표 (W=0.15): DXY, 나스닥 상관관계 추정
+- R/R 비율 (W=0.15): 목표가/손절가 비율
+
+## Adaptive Market Regime
+현재 국면을 판별하고 전략을 조정하세요:
+- Bull: 추세 추종 전략, 롱 편향
+- Bear: 숏 편향, 리스크 축소
+- Sideways: 레인지 전략, 낮은 레버리지
+- Volatile: 손절 범위 1.5배 확대, 포지션 사이즈 축소
+
+## 진입가 규칙
+entry_price는 반드시 위에 제공된 "현재가"를 정확히 사용하세요!
+- LONG: target_price = entry_price * 1.02~1.05, stop_loss = entry_price * 0.98~0.99
+- SHORT: target_price = entry_price * 0.95~0.98, stop_loss = entry_price * 1.01~1.02
+
+evidence_reasoning에는 반드시 [국면 판단: Bull/Bear/Sideways/Volatile] 태그를 포함하고, 판단 근거를 전문 퀀트 트레이더 말투로 서술하세요.
 
 응답 형식 (JSON):
 {
@@ -137,9 +156,9 @@ ${coinsToAnalyze.map(c => `- ${c.symbol}: 현재가 $${c.price.toFixed(c.price <
     "target_price": 목표가,
     "stop_loss": 손절가,
     "leverage": 1-10,
-    "confidence": 50-100,
+    "confidence": Quantum Inference Matrix 최종 점수 (0-100),
     "sentiment_score": -100~100,
-    "evidence_reasoning": "진입 근거 설명"
+    "evidence_reasoning": "[국면 판단: X] 판단 근거 상세"
   }
 }
 
@@ -154,7 +173,7 @@ ${coinsToAnalyze.map(c => `- ${c.symbol}: 현재가 $${c.price.toFixed(c.price <
       body: JSON.stringify({
         model: "google/gemini-3-flash-preview",
         messages: [
-          { role: "system", content: "당신은 냉철하고 분석적인 암호화폐 선물 트레이더입니다. JSON 형식으로만 응답하세요. 가격은 반드시 제공된 현재가를 사용하세요." },
+          { role: "system", content: "당신은 세계 최정상 퀀트 트레이더 'Leaf-Master'입니다. 냉철하고 분석적이며, 시장의 맥락을 주도적으로 판단합니다. JSON 형식으로만 응답하세요. 가격은 반드시 제공된 현재가를 사용하세요." },
           { role: "user", content: analysisPrompt },
         ],
         tools: [

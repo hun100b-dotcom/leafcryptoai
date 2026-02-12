@@ -5,18 +5,21 @@ import { TrendingUp, TrendingDown, Minus, Target, Shield, Zap, Activity, Brain }
 import { motion } from 'framer-motion';
 import { MarketRegimeIndicator, detectMarketRegime } from './MarketRegimeIndicator';
 import { QuantumConfidenceMatrix, computeConfidenceFactors } from './QuantumConfidenceMatrix';
+import { CircuitBreakerGauge } from './CircuitBreakerGauge';
+import { CircuitBreakerState } from '@/hooks/useCircuitBreaker';
 
 interface ActionCardProps {
   coin: CoinData;
   activeAISignal?: AISignal | null;
   longRatio?: number;
+  circuitBreaker?: CircuitBreakerState;
 }
 
 /**
  * ActionCard - Leaf-Master 핵심 액션 카드
  * 선택된 코인의 현재 상태, AI 시그널, 시장 국면, 신뢰도 매트릭스를 통합 표시
  */
-export function ActionCard({ coin, activeAISignal, longRatio }: ActionCardProps) {
+export function ActionCard({ coin, activeAISignal, longRatio, circuitBreaker }: ActionCardProps) {
   const hasSignal = !!activeAISignal;
   const position = activeAISignal?.position || 'HOLD';
   const regime = detectMarketRegime(coin.change24h, longRatio);

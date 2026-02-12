@@ -238,17 +238,21 @@ export default function AIMentorAsset() {
 
         {/* Main Content Tabs */}
         <Tabs defaultValue="growth" className="space-y-4">
-          <TabsList className="grid grid-cols-3 w-full max-w-md">
-            <TabsTrigger value="growth" className="gap-2">
-              <TrendingUp className="w-4 h-4" />
+          <TabsList className="grid grid-cols-4 w-full max-w-lg">
+            <TabsTrigger value="growth" className="gap-1 text-xs">
+              <TrendingUp className="w-3.5 h-3.5" />
               성장 곡선
             </TabsTrigger>
-            <TabsTrigger value="learning" className="gap-2">
-              <BookOpen className="w-4 h-4" />
+            <TabsTrigger value="evolution" className="gap-1 text-xs">
+              <Dna className="w-3.5 h-3.5" />
+              진화 엔진
+            </TabsTrigger>
+            <TabsTrigger value="learning" className="gap-1 text-xs">
+              <BookOpen className="w-3.5 h-3.5" />
               학습 로그
             </TabsTrigger>
-            <TabsTrigger value="reviews" className="gap-2">
-              <Brain className="w-4 h-4" />
+            <TabsTrigger value="reviews" className="gap-1 text-xs">
+              <Brain className="w-3.5 h-3.5" />
               자기 복기
             </TabsTrigger>
           </TabsList>

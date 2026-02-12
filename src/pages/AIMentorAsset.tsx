@@ -25,6 +25,9 @@ export default function AIMentorAsset() {
   const { signals, stats, reviews } = useAISignals();
   const { settings } = useUserPositions();
   const [showSettings, setShowSettings] = useState(false);
+  
+  // 자기 진화형 학습 엔진
+  const { dualMemory, evolutionaryStats, kellyCriterion } = useEvolutionaryEngine(signals);
 
   // Calculate AI's virtual asset based on trading history
   const aiAssetData = useMemo(() => {

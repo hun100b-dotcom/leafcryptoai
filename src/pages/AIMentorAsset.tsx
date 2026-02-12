@@ -3,17 +3,19 @@ import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { 
   ArrowLeft, Bot, TrendingUp, TrendingDown, Award, Brain, 
-  Target, Zap, Trophy, Star, ChevronUp, BookOpen, Settings
+  Target, Zap, Trophy, Star, ChevronUp, BookOpen, Settings, Dna
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useAISignals } from '@/hooks/useAISignals';
 import { useUserPositions } from '@/hooks/useUserPositions';
+import { useEvolutionaryEngine } from '@/hooks/useEvolutionaryEngine';
 import { AIGrowthChart } from '@/components/ai-mentor/AIGrowthChart';
 import { AITierBadge } from '@/components/ai-mentor/AITierBadge';
 import { AILearningLog } from '@/components/ai-mentor/AILearningLog';
 import { WhitelistSettings } from '@/components/ai-mentor/WhitelistSettings';
+import { EvolutionaryStatsPanel } from '@/components/EvolutionaryStatsPanel';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { cn } from '@/lib/utils';
 

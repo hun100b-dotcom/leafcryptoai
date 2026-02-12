@@ -274,6 +274,14 @@ export default function AIMentorAsset() {
             </Card>
           </TabsContent>
 
+          <TabsContent value="evolution">
+            <EvolutionaryStatsPanel
+              stats={evolutionaryStats}
+              kelly={kellyCriterion}
+              memory={dualMemory}
+            />
+          </TabsContent>
+
           <TabsContent value="learning">
             <AILearningLog signals={signals} />
           </TabsContent>

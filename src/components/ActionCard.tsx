@@ -143,12 +143,15 @@ export function ActionCard({ coin, activeAISignal, longRatio, circuitBreaker }: 
         </div>
       </div>
 
-      {/* Quantum Confidence Matrix */}
-      {hasSignal && (
-        <div className="mt-4">
+      {/* Quantum Confidence Matrix + Circuit Breaker */}
+      <div className="mt-4 grid grid-cols-1 lg:grid-cols-2 gap-4">
+        {hasSignal && (
           <QuantumConfidenceMatrix factors={factors} finalScore={finalScore} />
-        </div>
-      )}
+        )}
+        {circuitBreaker && (
+          <CircuitBreakerGauge state={circuitBreaker} />
+        )}
+      </div>
 
       {/* AI 분석 코멘트 */}
       {hasSignal && activeAISignal.evidenceReasoning && (

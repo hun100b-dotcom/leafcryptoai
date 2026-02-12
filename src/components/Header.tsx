@@ -33,10 +33,10 @@ export function Header({ totalWinRate, totalPnL, totalSignals, isConnected = tru
               </div>
               <div>
                 <h1 className="text-xl font-bold tracking-tight">
-                  LEAD MASTER<span className="text-primary">: CRYPTO</span>
+                  LEAF<span className="text-primary">-MASTER</span>
                 </h1>
                 <p className="text-xs text-muted-foreground">
-                  AI가 당신의 롱/숏을 리드합니다
+                  초지능형 퀀트 트레이더
                 </p>
               </div>
             </Link>

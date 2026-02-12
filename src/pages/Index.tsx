@@ -9,11 +9,16 @@ import { Footer } from '@/components/Footer';
 import { PerformanceModal } from '@/components/PerformanceModal';
 import { AIMentorChat } from '@/components/AIMentorChat';
 import { AIAdvicePanel } from '@/components/AIAdvicePanel';
+import { CircuitBreakerGauge } from '@/components/CircuitBreakerGauge';
+import { TradeFootprintsOverlay } from '@/components/TradeFootprintsOverlay';
+import { MobileStickyBar } from '@/components/MobileStickyBar';
 import { useBinancePrice } from '@/hooks/useBinancePrice';
 import { useSignals } from '@/hooks/useSignals';
 import { useAISignals } from '@/hooks/useAISignals';
 import { useUserPositions } from '@/hooks/useUserPositions';
-import { mockNews, mockEvents } from '@/data/mockData';
+import { useBinanceLongShortRatio } from '@/hooks/useBinanceLongShortRatio';
+import { useCircuitBreaker } from '@/hooks/useCircuitBreaker';
+import { mockNews } from '@/data/mockData';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from '@/components/ui/resizable';
@@ -23,24 +28,20 @@ const Index = () => {
   const [selectedSymbol, setSelectedSymbol] = useState('BTC');
   const [isPerformanceOpen, setIsPerformanceOpen] = useState(false);
   
-  // Use real Binance prices
   const { coins, isConnected } = useBinancePrice();
-  
-  // Use signals from database (legacy)
   const { signals, stats, isLoading: signalsLoading } = useSignals();
-  
-  // Use new AI signals system
   const { signals: aiSignals, stats: aiStats, advices } = useAISignals();
-  
-  // User positions
   const { positions, stats: userStats, settings } = useUserPositions();
+  const { data: ratioData } = useBinanceLongShortRatio(selectedSymbol);
+  
+  // Circuit Breaker 리스크 엔진
+  const circuitBreakerState = useCircuitBreaker(aiSignals);
 
   const selectedCoin = useMemo(
     () => coins.find(c => c.symbol === selectedSymbol) || coins[0],
     [selectedSymbol, coins]
   );
 
-  // Active AI signal for selected coin
   const activeAISignal = useMemo(
     () => aiSignals.find(s => s.symbol === selectedSymbol && s.status === 'ACTIVE'),
     [selectedSymbol, aiSignals]
@@ -85,8 +86,10 @@ const Index = () => {
     };
   }, [aiSignalsForPerformance, aiStats]);
 
+  const activeSignalsCount = aiSignals.filter(s => s.status === 'ACTIVE').length;
+
   return (
-    <div className="min-h-screen flex flex-col bg-background">
+    <div className="min-h-screen flex flex-col bg-background max-w-[100vw] overflow-x-hidden">
       {/* Sticky Header */}
       <div className="sticky top-0 z-50">
         <Header 
@@ -99,11 +102,11 @@ const Index = () => {
       </div>
       
       <div className="flex-1 flex overflow-hidden">
-        {/* Left Sidebar - Coin List */}
+        {/* Left Sidebar - Coin List (데스크톱만) */}
         <motion.aside
           initial={{ opacity: 0, x: -20 }}
           animate={{ opacity: 1, x: 0 }}
-          className="w-64 border-r border-border bg-card/30 hidden lg:block"
+          className="w-64 border-r border-border bg-card/30 hidden lg:block flex-shrink-0"
         >
           <CoinList
             coins={coins}
@@ -113,7 +116,24 @@ const Index = () => {
         </motion.aside>
 
         {/* Center - Chart & Action Card */}
-        <main className="flex-1 flex flex-col overflow-y-auto scrollbar-thin p-6 gap-6">
+        <main className="flex-1 flex flex-col overflow-y-auto scrollbar-thin p-3 sm:p-6 gap-4 sm:gap-6 min-w-0">
+          {/* 모바일: 코인 선택 횡스크롤 */}
+          <div className="flex gap-2 overflow-x-auto scrollbar-thin lg:hidden pb-2">
+            {coins.slice(0, 8).map(c => (
+              <button
+                key={c.symbol}
+                onClick={() => setSelectedSymbol(c.symbol)}
+                className={`flex-shrink-0 px-3 py-1.5 rounded-full text-xs font-medium border transition-all ${
+                  selectedSymbol === c.symbol
+                    ? 'bg-primary/20 border-primary text-primary'
+                    : 'bg-card border-border text-muted-foreground'
+                }`}
+              >
+                {c.symbol}
+              </button>
+            ))}
+          </div>
+
           {selectedCoin && (
             <>
               <motion.div
@@ -122,19 +142,27 @@ const Index = () => {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.1 }}
               >
-                <ActionCard coin={selectedCoin} activeAISignal={activeAISignal} />
+                <ActionCard
+                  coin={selectedCoin}
+                  activeAISignal={activeAISignal}
+                  longRatio={ratioData?.longRatio}
+                  circuitBreaker={circuitBreakerState}
+                />
               </motion.div>
 
-              {/* TradingView Real Chart */}
+              {/* TradingView Chart + Trade Footprints */}
               <motion.div
                 key={selectedSymbol + '-chart'}
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.2 }}
-                className="trading-card p-0 overflow-hidden"
-                style={{ height: '500px' }}
+                className="trading-card p-0 overflow-hidden relative"
+                style={{ height: 'clamp(300px, 50vh, 500px)' }}
               >
                 <TradingViewChart symbol={selectedSymbol} />
+                <TradeFootprintsOverlay
+                  signals={filteredAISignals.length > 0 ? filteredAISignals : aiSignals.slice(0, 5)}
+                />
               </motion.div>
             </>
           )}
@@ -146,13 +174,30 @@ const Index = () => {
           >
             <SentimentGauge symbol={selectedSymbol} news={mockNews} />
           </motion.div>
+
+          {/* 모바일: AI 리딩 섹션 (xl 이하에서 표시) */}
+          <div className="xl:hidden space-y-4">
+            <div className="trading-card overflow-hidden" style={{ maxHeight: '60vh' }}>
+              <AITimelineEnhanced
+                signals={filteredAISignals.length > 0 ? filteredAISignals : aiSignals.slice(0, 5)}
+                userAsset={userStats.currentAsset}
+              />
+            </div>
+            <div className="trading-card p-3">
+              <div className="flex items-center gap-2 mb-2">
+                <Bell className="w-4 h-4 text-primary" />
+                <span className="text-xs font-semibold text-muted-foreground">AI 조언 및 긴급알림</span>
+              </div>
+              <AIAdvicePanel />
+            </div>
+          </div>
         </main>
 
-        {/* Right Sidebar - AI vs User Tabs */}
+        {/* Right Sidebar - AI 탭 (데스크톱) */}
         <motion.aside
           initial={{ opacity: 0, x: 20 }}
           animate={{ opacity: 1, x: 0 }}
-          className="w-96 border-l border-border bg-card/30 hidden xl:flex flex-col justify-start overflow-y-auto scrollbar-thin"
+          className="w-96 border-l border-border bg-card/30 hidden xl:flex flex-col justify-start overflow-y-auto scrollbar-thin flex-shrink-0"
         >
           <Tabs defaultValue="ai" className="flex-1 flex flex-col justify-start">
             <TabsList className="w-full grid grid-cols-1 h-auto p-0 rounded-none bg-card border-b border-border">
@@ -166,6 +211,11 @@ const Index = () => {
             </TabsList>
             
             <TabsContent value="ai" className="flex-1 flex flex-col overflow-hidden m-0 p-0">
+              {/* Circuit Breaker 게이지 */}
+              <div className="p-2 border-b border-border">
+                <CircuitBreakerGauge state={circuitBreakerState} compact />
+              </div>
+
               <ResizablePanelGroup direction="vertical" className="flex-1">
                 <ResizablePanel defaultSize={60} minSize={25}>
                   <div className="h-full overflow-hidden">
@@ -193,7 +243,16 @@ const Index = () => {
         </motion.aside>
       </div>
 
-      <Footer />
+      <div className="hidden lg:block">
+        <Footer />
+      </div>
+
+      {/* Mobile Sticky Bar */}
+      <MobileStickyBar
+        totalPnL={aiStatsForPerformance.totalPnL}
+        winRate={aiStatsForPerformance.winRate}
+        activeSignals={activeSignalsCount}
+      />
 
       {/* AI Mentor Chat */}
       {selectedCoin && (

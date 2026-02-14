@@ -111,10 +111,32 @@ serve(async (req) => {
     // 각 코인의 현재가 맵 생성 (AI 응답 검증용)
     const priceMap = Object.fromEntries(validMarketData.map(m => [m.symbol, m.price]));
 
+    // 롱/숏 밸런스를 위한 최근 시그널 분석
+    const { data: recentSignals } = await supabase
+      .from("ai_trading_signals")
+      .select("position")
+      .order("created_at", { ascending: false })
+      .limit(10);
+    
+    const recentLongs = recentSignals?.filter(s => s.position === 'LONG').length || 0;
+    const recentShorts = recentSignals?.filter(s => s.position === 'SHORT').length || 0;
+    const biasWarning = recentLongs > recentShorts + 3 
+      ? '\n\n⚠️ 최근 LONG 편향이 감지됩니다. SHORT 기회도 균형있게 탐색하세요.'
+      : recentShorts > recentLongs + 3
+      ? '\n\n⚠️ 최근 SHORT 편향이 감지됩니다. LONG 기회도 균형있게 탐색하세요.'
+      : '';
+
     const analysisPrompt = `당신은 세계 최정상 퀀트 트레이더 'Leaf-Master'입니다. 냉철하고 분석적인 전문가로서, 단순히 지표를 읽는 것이 아니라 시장의 맥락을 주도적으로 판단합니다.
 
 ## 현재 시장 데이터
 ${coinsToAnalyze.map(c => `- ${c.symbol}: 현재가 $${c.price.toFixed(c.price < 1 ? 4 : 2)} (24h: ${c.change24h > 0 ? '+' : ''}${c.change24h.toFixed(2)}%), 롱비율: ${c.longRatio.toFixed(1)}%, 숏비율: ${c.shortRatio.toFixed(1)}%`).join('\n')}
+${biasWarning}
+
+## 방향성 균형 원칙
+- 상승장(24h 변동 > +2%)에서는 롱 진입을 적극 검토하세요. 롱 임계값을 낮추세요.
+- 하락장(24h 변동 < -2%)에서는 숏 진입을 적극 검토하세요.
+- 횡보장(-2% ~ +2%)에서는 롱/숏 양방향 모두 열어두세요.
+- 방향성 편향을 피하세요. 데이터가 롱을 가리키면 롱, 숏을 가리키면 숏입니다.
 
 ## Self-Reflecting 검증 단계
 시그널 생성 전 반드시 아래 자기 검증을 수행하세요:
@@ -132,10 +154,10 @@ ${coinsToAnalyze.map(c => `- ${c.symbol}: 현재가 $${c.price.toFixed(c.price <
 
 ## Adaptive Market Regime
 현재 국면을 판별하고 전략을 조정하세요:
-- Bull: 추세 추종 전략, 롱 편향
-- Bear: 숏 편향, 리스크 축소
-- Sideways: 레인지 전략, 낮은 레버리지
-- Volatile: 손절 범위 1.5배 확대, 포지션 사이즈 축소
+- Bull (24h > +2%): 추세 추종 전략, 롱 편향, 적극적 진입
+- Bear (24h < -2%): 숏 편향, 리스크 축소, 숏 진입 검토
+- Sideways (-2% ~ +2%): 레인지 전략, 낮은 레버리지, 양방향 검토
+- Volatile (|24h| > 5%): 손절 범위 1.5배 확대, 포지션 사이즈 축소
 
 ## 진입가 규칙
 entry_price는 반드시 위에 제공된 "현재가"를 정확히 사용하세요!

@@ -12,12 +12,14 @@ import { AIAdvicePanel } from '@/components/AIAdvicePanel';
 import { CircuitBreakerGauge } from '@/components/CircuitBreakerGauge';
 import { TradeFootprintsOverlay } from '@/components/TradeFootprintsOverlay';
 import { MobileStickyBar } from '@/components/MobileStickyBar';
+import { SelfCorrectionReport } from '@/components/SelfCorrectionReport';
 import { useBinancePrice } from '@/hooks/useBinancePrice';
 import { useSignals } from '@/hooks/useSignals';
 import { useAISignals } from '@/hooks/useAISignals';
 import { useUserPositions } from '@/hooks/useUserPositions';
 import { useBinanceLongShortRatio } from '@/hooks/useBinanceLongShortRatio';
 import { useCircuitBreaker } from '@/hooks/useCircuitBreaker';
+import { useEvolutionaryEngine } from '@/hooks/useEvolutionaryEngine';
 import { mockNews } from '@/data/mockData';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -36,6 +38,9 @@ const Index = () => {
   
   // Circuit Breaker 리스크 엔진
   const circuitBreakerState = useCircuitBreaker(aiSignals);
+  
+  // 자기 진화형 학습 엔진 - 대시보드에 자가 수정 결과 표시
+  const { dualMemory, evolutionaryStats } = useEvolutionaryEngine(aiSignals);
 
   const selectedCoin = useMemo(
     () => coins.find(c => c.symbol === selectedSymbol) || coins[0],
@@ -177,6 +182,14 @@ const Index = () => {
 
           {/* 모바일: AI 리딩 섹션 (xl 이하에서 표시) */}
           <div className="xl:hidden space-y-4">
+            {/* 자가 수정 보고 (가중치 변경 있을 때만) */}
+            {dualMemory.weightAdjustments.length > 0 && (
+              <SelfCorrectionReport
+                adjustments={dualMemory.weightAdjustments}
+                stats={evolutionaryStats}
+                compact
+              />
+            )}
             <div className="trading-card overflow-hidden" style={{ maxHeight: '60vh' }}>
               <AITimelineEnhanced
                 signals={filteredAISignals.length > 0 ? filteredAISignals : aiSignals.slice(0, 5)}
@@ -215,6 +228,17 @@ const Index = () => {
               <div className="p-2 border-b border-border">
                 <CircuitBreakerGauge state={circuitBreakerState} compact />
               </div>
+
+              {/* 자가 수정 보고 (데스크톱 사이드바) */}
+              {dualMemory.weightAdjustments.length > 0 && (
+                <div className="p-2 border-b border-border">
+                  <SelfCorrectionReport
+                    adjustments={dualMemory.weightAdjustments}
+                    stats={evolutionaryStats}
+                    compact
+                  />
+                </div>
+              )}
 
               <ResizablePanelGroup direction="vertical" className="flex-1">
                 <ResizablePanel defaultSize={60} minSize={25}>

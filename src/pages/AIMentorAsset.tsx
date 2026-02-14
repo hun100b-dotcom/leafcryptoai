@@ -3,8 +3,9 @@ import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { 
   ArrowLeft, Bot, TrendingUp, TrendingDown, Award, Brain, 
-  Target, Zap, Trophy, Star, ChevronUp, BookOpen, Settings, Dna
+  Target, Zap, Trophy, Star, ChevronUp, BookOpen, Settings, Dna, RefreshCw
 } from 'lucide-react';
+import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -16,13 +17,14 @@ import { AITierBadge } from '@/components/ai-mentor/AITierBadge';
 import { AILearningLog } from '@/components/ai-mentor/AILearningLog';
 import { WhitelistSettings } from '@/components/ai-mentor/WhitelistSettings';
 import { EvolutionaryStatsPanel } from '@/components/EvolutionaryStatsPanel';
+import { SelfCorrectionReport } from '@/components/SelfCorrectionReport';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { cn } from '@/lib/utils';
 
 const AI_INITIAL_SEED = 1000; // $1,000 starting capital
 
 export default function AIMentorAsset() {
-  const { signals, stats, reviews } = useAISignals();
+  const { signals, stats, reviews, refetch } = useAISignals();
   const { settings } = useUserPositions();
   const [showSettings, setShowSettings] = useState(false);
   
@@ -289,12 +291,34 @@ export default function AIMentorAsset() {
           <TabsContent value="reviews">
             <Card>
               <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Brain className="w-5 h-5 text-violet-500" />
-                  AI 자기 복기 기록
+                <CardTitle className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Brain className="w-5 h-5 text-violet-500" />
+                    AI 자기 복기 기록
+                  </div>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={() => {
+                      refetch();
+                      toast.success('복기 데이터를 새로고침했습니다');
+                    }}
+                    className="gap-1"
+                  >
+                    <RefreshCw className="w-3 h-3" />
+                    새로고침
+                  </Button>
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
+                {/* 자가 수정 보고 */}
+                {dualMemory.weightAdjustments.length > 0 && (
+                  <SelfCorrectionReport
+                    adjustments={dualMemory.weightAdjustments}
+                    stats={evolutionaryStats}
+                  />
+                )}
+
                 {reviews.length === 0 ? (
                   <p className="text-center text-muted-foreground py-8">
                     아직 복기 기록이 없습니다

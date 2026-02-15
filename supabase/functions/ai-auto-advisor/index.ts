@@ -14,7 +14,8 @@ serve(async (req) => {
   try {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const lovableApiKey = Deno.env.get("LOVABLE_API_KEY");
+    const geminiApiKey = Deno.env.get("GEMINI_API_KEY");
+    const GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions";
 
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
@@ -50,7 +51,6 @@ serve(async (req) => {
     const urgentConditions: any[] = [];
     
     for (const data of marketData) {
-      // 5% 이상 급등/급락
       if (Math.abs(data.change24h) >= 5) {
         urgentConditions.push({
           symbol: data.symbol,
@@ -60,7 +60,6 @@ serve(async (req) => {
         });
       }
       
-      // 극단적 롱/숏 비율 (70% 이상)
       if (data.longRatio >= 70 || data.longRatio <= 30) {
         urgentConditions.push({
           symbol: data.symbol,
@@ -71,8 +70,8 @@ serve(async (req) => {
       }
     }
 
-    if (!lovableApiKey) {
-      console.log("LOVABLE_API_KEY not configured");
+    if (!geminiApiKey) {
+      console.log("GEMINI_API_KEY not configured");
       return new Response(JSON.stringify({ message: "AI key not configured" }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -101,14 +100,14 @@ ${urgentConditions.length > 0
 
 간결하고 실전적인 조언을 제공하세요.`;
 
-    const aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    const aiResponse = await fetch(GEMINI_API_URL, {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${lovableApiKey}`,
+        Authorization: `Bearer ${geminiApiKey}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemini-3-flash-preview",
+        model: "gemini-2.0-flash",
         messages: [
           { 
             role: "system", 

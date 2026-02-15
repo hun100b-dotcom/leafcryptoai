@@ -14,7 +14,8 @@ serve(async (req) => {
   try {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const lovableApiKey = Deno.env.get("LOVABLE_API_KEY");
+    const geminiApiKey = Deno.env.get("GEMINI_API_KEY");
+    const GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions";
 
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
@@ -40,8 +41,8 @@ serve(async (req) => {
 
     console.log(`Reviewing ${recentSignals.length} signals from last 24 hours`);
 
-    if (!lovableApiKey) {
-      console.log("LOVABLE_API_KEY not configured");
+    if (!geminiApiKey) {
+      console.log("GEMINI_API_KEY not configured");
       return new Response(JSON.stringify({ message: "AI key not configured" }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -78,14 +79,14 @@ ${recentSignals.map(s => `
 
 냉철하고 분석적인 톤으로, 구체적인 개선 방안을 포함해 작성해주세요.`;
 
-    const aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    const aiResponse = await fetch(GEMINI_API_URL, {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${lovableApiKey}`,
+        Authorization: `Bearer ${geminiApiKey}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemini-3-flash-preview",
+        model: "gemini-2.0-flash",
         messages: [
           { 
             role: "system", 

@@ -109,40 +109,45 @@ const Positions = () => {
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
-      {/* Sticky Header */}
+      {/* Sticky Header - 모바일 반응형 */}
       <header className="sticky top-0 z-50 border-b border-border bg-card/95 backdrop-blur-sm">
-        <div className="container max-w-6xl mx-auto px-4 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <Link to="/">
-              <Button variant="ghost" size="sm" className="gap-2">
-                <ArrowLeft className="w-4 h-4" />
-                대시보드로 돌아가기
-              </Button>
-            </Link>
-            <div className="flex items-center gap-2">
-              <Wallet className="w-5 h-5 text-primary" />
-              <h1 className="text-lg font-bold">내 포지션</h1>
+        <div className="container max-w-6xl mx-auto px-3 sm:px-4 py-3 sm:py-4">
+          {/* 상단: 뒤로가기 + 제목 */}
+          <div className="flex items-center justify-between gap-2 mb-2 sm:mb-0">
+            <div className="flex items-center gap-2 sm:gap-4 min-w-0">
+              <Link to="/">
+                <Button variant="ghost" size="sm" className="gap-1 sm:gap-2 px-2 sm:px-3 flex-shrink-0">
+                  <ArrowLeft className="w-4 h-4" />
+                  <span className="hidden sm:inline">대시보드로 돌아가기</span>
+                </Button>
+              </Link>
+              <div className="flex items-center gap-1.5 flex-shrink-0">
+                <Wallet className="w-4 h-4 sm:w-5 sm:h-5 text-primary" />
+                <h1 className="text-sm sm:text-lg font-bold whitespace-nowrap">내 포지션</h1>
+              </div>
             </div>
-          </div>
-          <div className="flex gap-2">
-            <Button
-              variant="outline"
-              onClick={() => setIsJoinModalOpen(true)}
-              disabled={availableSignals.length === 0}
-              className="gap-2"
-            >
-              <Bot className="w-4 h-4" />
-              AI 시그널 참여
-              {availableSignals.length > 0 && (
-                <span className="bg-primary text-primary-foreground text-xs px-1.5 py-0.5 rounded-full">
-                  {availableSignals.length}
-                </span>
-              )}
-            </Button>
-            <Button onClick={() => setIsAddModalOpen(true)} className="gap-2">
-              <Plus className="w-4 h-4" />
-              직접 진입
-            </Button>
+            {/* 액션 버튼: 모바일에서 아이콘만 */}
+            <div className="flex gap-1.5 sm:gap-2 flex-shrink-0">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setIsJoinModalOpen(true)}
+                disabled={availableSignals.length === 0}
+                className="gap-1 sm:gap-2 px-2 sm:px-3 text-xs sm:text-sm"
+              >
+                <Bot className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                <span className="hidden xs:inline">AI 시그널 참여</span>
+                {availableSignals.length > 0 && (
+                  <span className="bg-primary text-primary-foreground text-[10px] sm:text-xs px-1 sm:px-1.5 py-0.5 rounded-full">
+                    {availableSignals.length}
+                  </span>
+                )}
+              </Button>
+              <Button size="sm" onClick={() => setIsAddModalOpen(true)} className="gap-1 sm:gap-2 px-2 sm:px-3 text-xs sm:text-sm">
+                <Plus className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                <span className="hidden xs:inline">직접 진입</span>
+              </Button>
+            </div>
           </div>
         </div>
       </header>

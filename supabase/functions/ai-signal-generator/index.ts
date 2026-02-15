@@ -26,7 +26,8 @@ serve(async (req) => {
   try {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const lovableApiKey = Deno.env.get("LOVABLE_API_KEY");
+    const geminiApiKey = Deno.env.get("GEMINI_API_KEY");
+    const GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions";
 
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
@@ -43,7 +44,6 @@ serve(async (req) => {
         const priceData: BinanceTicker = await priceRes.json();
         const ratioData: LongShortRatio[] = await ratioRes.json();
         
-        // lastPrice 필드 사용 (price가 아님)
         const price = parseFloat(priceData.lastPrice);
         const change24h = parseFloat(priceData.priceChangePercent);
         
@@ -70,7 +70,6 @@ serve(async (req) => {
 
     const marketData = await Promise.all(pricePromises);
     
-    // 가격이 0인 코인 필터링
     const validMarketData = marketData.filter(m => m.price > 0);
     console.log("Valid market data:", validMarketData);
 
@@ -91,8 +90,8 @@ serve(async (req) => {
     const activeSymbols = new Set(activeSignals?.map(s => s.symbol) || []);
 
     // 3. AI를 사용하여 시그널 생성 판단
-    if (!lovableApiKey) {
-      console.log("LOVABLE_API_KEY not configured, skipping AI analysis");
+    if (!geminiApiKey) {
+      console.log("GEMINI_API_KEY not configured, skipping AI analysis");
       return new Response(JSON.stringify({ message: "AI key not configured" }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -186,14 +185,14 @@ evidence_reasoning에는 반드시 [국면 판단: Bull/Bear/Sideways/Volatile] 
 
 시그널을 생성하지 않을 경우: {"should_create_signal": false}`;
 
-    const aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    const aiResponse = await fetch(GEMINI_API_URL, {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${lovableApiKey}`,
+        Authorization: `Bearer ${geminiApiKey}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemini-3-flash-preview",
+        model: "gemini-2.0-flash",
         messages: [
           { role: "system", content: "당신은 세계 최정상 퀀트 트레이더 'Leaf-Master'입니다. 냉철하고 분석적이며, 시장의 맥락을 주도적으로 판단합니다. JSON 형식으로만 응답하세요. 가격은 반드시 제공된 현재가를 사용하세요." },
           { role: "user", content: analysisPrompt },

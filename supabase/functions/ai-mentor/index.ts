@@ -7,38 +7,67 @@ const corsHeaders = {
 
 const GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions";
 
-const SYSTEM_PROMPT = `당신은 전 세계 1등 퀀트 트레이더 'Leaf-Master'입니다. 바이낸스 선물 거래의 살아있는 전설로서 냉철하고 분석적인 톤으로 조언합니다.
+const SYSTEM_PROMPT = `당신은 'Leaf-Master'입니다. 단순한 챗봇이 아니라, 이 트레이딩 시스템의 모든 데이터를 총괄하는 **중앙 통합 로직 엔진(Central Integrated Logic Engine)**입니다.
 
-## 역할
-- 실시간 시장 분석 및 진입/손절 전략 제시
-- 포지션 관리 조언 (레버리지, 리스크 관리)
-- 기술적 지표 기반 전망 분석
-- 컨퍼런스콜, AMA, 중요 이벤트 일정 반영
-- 사용자의 현재 자산 상황과 포지션을 고려한 맞춤 조언
+## 핵심 정체성
+- 냉철한 시니어 퀀트 트레이더로서 데이터 중심으로 보고합니다.
+- 모든 응답은 현재 시장 데이터, 과거 매매 로그, 가중치 조정 이력을 기반으로 합니다.
+- 게임 요소(등급, 레벨, 스킬 상승 등) 없이 순수 정량 분석만 제공합니다.
 
 ## 분석 프레임워크
-1. **기술적 분석**: RSI, MACD, 볼린저밴드, 피보나치, 이동평균선
-2. **온체인 지표**: 롱/숏 비율, 펀딩비, 청산 데이터
-3. **시장 심리**: Fear & Greed Index, 소셜 미디어 언급량
-4. **이벤트 리스크**: FOMC, CPI 발표, 컨퍼런스콜, 토큰 언락
+1. **Quantum Inference Matrix**: 기술적(30%) + 센티먼트(30%) + 매크로(30%) + R/R(10%)
+2. **Adaptive Market Regime**: Bull/Bear/Sideways/Volatile 국면별 전략 스위칭
+3. **Self-Reflection**: 편향성 검증, 리스크 검증 후 최종 판단
+
+## 재진입 전략 (Continuous Scanning Mode)
+포지션 종료 즉시 다음 기회를 스캔합니다:
+- Trend Follow: EMA 20/50 정배열 확인 시 추격 타점 분석
+- Mean Reversion: 볼린저 밴드 하단 이탈 후 회귀 신호 감지
+- Volatility Breakout: Squeeze 돌파 확인 시 즉시 진입 준비
+- 비정형 데이터(호가창 비대칭, 매집 흔적, 상관관계 급변)도 주도적으로 분석
+
+## 선제적 개입 로직
+- 임계 가격 접근, 손절가 근접 시 사용자가 묻기 전에 경고
+- 과거 유사 패턴 감지 시 "과거 로그와 유사한 시장 구조 감지. 선제적 대응 제안" 보고
+- 모든 제안에 신뢰도 0~100% 산출
+
+## 매크로 통합
+- DXY, 테더 도미넌스, 나스닥 상관관계를 수치화
+- 나스닥 상관관계(r)가 0.8 이상일 경우 거시 지표 가중치 1.5배 상향
+- S_final = (0.4 × Technical) + (0.3 × Sentiment) + (0.3 × Macro)
 
 ## 응답 형식
 - 간결하고 명확하게 답변 (3-5문장)
 - 구체적인 가격대와 근거 제시
 - 진입 추천 시 반드시 TP/SL 제시
-- 리스크 경고 포함
+- 통계적 신뢰도를 0~100% 사이로 산출하여 제시
 - 이모지 적절히 사용 (📈 📉 ⚠️ 💡 🎯 🔥 💰)
 
 ## 주의사항
 - 투자 조언이 아닌 참고용 분석임을 명시
 - 손실 가능성 항상 언급
 - 과도한 레버리지 경고 (20x 이상은 고위험)
-- 사용자의 현재 자산 대비 적정 포지션 크기 조언
+- 사용자의 현재 자산 대비 적정 포지션 크기 조언`;
 
-## 컨텍스트 활용
-- 사용자가 제공한 포지션 정보가 있다면 반드시 참고
-- 현재가 기준으로 TP/SL까지의 거리와 손익비 계산
-- 시장 상황이 나쁘면 진입 비권장 의견도 명확히 제시`;
+// Local fallback when API fails
+function generateLocalFallback(symbol: string, currentPrice: number): string {
+  return `⚠️ AI 엔진 일시 중단 - 로컬 분석 모드 활성화
+
+📊 ${symbol}/USDT 현재가: $${currentPrice?.toLocaleString() || 'N/A'}
+
+🔍 **로컬 분석 (제한적)**:
+- API 연결이 일시적으로 불안정합니다.
+- 현재 보유 포지션이 있다면 손절가를 재확인하세요.
+- 급격한 시장 변동 시 포지션 크기를 축소하는 것을 권장합니다.
+
+💡 **권장 조치**:
+1. 기존 포지션의 TP/SL 재점검
+2. 신규 진입 보류 (데이터 불충분)
+3. 잠시 후 다시 시도
+
+_이 분석은 로컬 폴백이며 AI 정밀 분석이 아닙니다._`;
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -49,10 +78,13 @@ serve(async (req) => {
     const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY");
     
     if (!GEMINI_API_KEY) {
-      throw new Error("GEMINI_API_KEY is not configured. Secrets에 GEMINI_API_KEY를 등록해주세요.");
+      // Fallback: return local analysis instead of error
+      const fallback = generateLocalFallback(symbol, currentPrice);
+      return new Response(JSON.stringify({ choices: [{ message: { content: fallback } }] }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
 
-    // 컨텍스트 구성 with enhanced market context
     let userMessage = message;
     if (symbol && currentPrice) {
       const positionInfo = position 
@@ -103,12 +135,14 @@ ${message}`;
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
-      const errorText = await response.text();
-      console.error("AI gateway error:", response.status, errorText);
-      return new Response(JSON.stringify({ error: "AI 서비스 오류" }), {
-        status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      
+      // Fallback on any other error
+      console.error("AI gateway error:", response.status);
+      const fallback = generateLocalFallback(symbol, currentPrice);
+      return new Response(
+        `data: ${JSON.stringify({ choices: [{ delta: { content: fallback } }] })}\n\ndata: [DONE]\n\n`,
+        { headers: { ...corsHeaders, "Content-Type": "text/event-stream" } }
+      );
     }
 
     return new Response(response.body, {

@@ -2,18 +2,16 @@ import { useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { 
-  ArrowLeft, Bot, TrendingUp, TrendingDown, Award, Brain, 
-  Target, Zap, Trophy, Star, ChevronUp, BookOpen, Settings, Dna, RefreshCw
+  ArrowLeft, Bot, TrendingUp, TrendingDown, 
+  Brain, Settings, Dna, RefreshCw, BarChart3, Shield, Activity
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
-import { Progress } from '@/components/ui/progress';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useAISignals } from '@/hooks/useAISignals';
 import { useUserPositions } from '@/hooks/useUserPositions';
 import { useEvolutionaryEngine } from '@/hooks/useEvolutionaryEngine';
 import { AIGrowthChart } from '@/components/ai-mentor/AIGrowthChart';
-import { AITierBadge } from '@/components/ai-mentor/AITierBadge';
 import { AILearningLog } from '@/components/ai-mentor/AILearningLog';
 import { WhitelistSettings } from '@/components/ai-mentor/WhitelistSettings';
 import { EvolutionaryStatsPanel } from '@/components/EvolutionaryStatsPanel';
@@ -21,25 +19,22 @@ import { SelfCorrectionReport } from '@/components/SelfCorrectionReport';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { cn } from '@/lib/utils';
 
-const AI_INITIAL_SEED = 1000; // $1,000 starting capital
+const AI_INITIAL_SEED = 10000; // $10,000 starting capital
 
 export default function AIMentorAsset() {
   const { signals, stats, reviews, refetch } = useAISignals();
   const { settings } = useUserPositions();
   const [showSettings, setShowSettings] = useState(false);
   
-  // 자기 진화형 학습 엔진
   const { dualMemory, evolutionaryStats, kellyCriterion } = useEvolutionaryEngine(signals);
 
   // Calculate AI's virtual asset based on trading history
   const aiAssetData = useMemo(() => {
     const completedSignals = signals.filter(s => s.status === 'WIN' || s.status === 'LOSS');
     
-    // Calculate cumulative returns
     let cumulativeReturn = 0;
     const assetHistory: { date: Date; asset: number; pnl: number }[] = [];
     
-    // Sort by date ascending for proper cumulative calculation
     const sortedSignals = [...completedSignals].sort(
       (a, b) => new Date(a.closedAt || a.createdAt).getTime() - new Date(b.closedAt || b.createdAt).getTime()
     );
@@ -70,26 +65,51 @@ export default function AIMentorAsset() {
     };
   }, [signals, stats, reviews]);
 
-  // Calculate AI tier based on performance
-  const aiTier = useMemo(() => {
-    const { totalReturnPercent, completedTrades, reviewCount } = aiAssetData;
-    const score = totalReturnPercent * 2 + completedTrades * 5 + reviewCount * 10;
+  // Professional financial metrics
+  const proMetrics = useMemo(() => {
+    const completedSignals = signals.filter(s => s.status === 'WIN' || s.status === 'LOSS');
+    const pnlValues = completedSignals.map(s => s.pnlPercent || 0);
+    
+    // MDD (Maximum Drawdown)
+    let peak = AI_INITIAL_SEED;
+    let maxDrawdown = 0;
+    let running = AI_INITIAL_SEED;
+    const sortedSignals = [...completedSignals].sort(
+      (a, b) => new Date(a.closedAt || a.createdAt).getTime() - new Date(b.closedAt || b.createdAt).getTime()
+    );
+    sortedSignals.forEach(s => {
+      running = running * (1 + (s.pnlPercent || 0) / 100);
+      if (running > peak) peak = running;
+      const dd = (peak - running) / peak * 100;
+      if (dd > maxDrawdown) maxDrawdown = dd;
+    });
 
-    if (score >= 500) return { name: '마스터', level: 5, color: 'text-purple-500', bg: 'bg-purple-500/20', icon: Trophy };
-    if (score >= 300) return { name: '다이아몬드', level: 4, color: 'text-cyan-400', bg: 'bg-cyan-400/20', icon: Star };
-    if (score >= 150) return { name: '골드', level: 3, color: 'text-yellow-500', bg: 'bg-yellow-500/20', icon: Award };
-    if (score >= 50) return { name: '실버', level: 2, color: 'text-gray-400', bg: 'bg-gray-400/20', icon: Target };
-    return { name: '브론즈', level: 1, color: 'text-orange-600', bg: 'bg-orange-600/20', icon: Zap };
-  }, [aiAssetData]);
+    // Sharpe Ratio (simplified daily)
+    const avgReturn = pnlValues.length > 0 ? pnlValues.reduce((a, b) => a + b, 0) / pnlValues.length : 0;
+    const variance = pnlValues.length > 1
+      ? pnlValues.reduce((acc, v) => acc + Math.pow(v - avgReturn, 2), 0) / (pnlValues.length - 1)
+      : 0;
+    const stdDev = Math.sqrt(variance);
+    const sharpeRatio = stdDev > 0 ? (avgReturn / stdDev) * Math.sqrt(252) : 0;
 
-  // Calculate growth gauge (intelligence level)
-  const intelligenceLevel = useMemo(() => {
-    const baseLevel = 50;
-    const tradesBonus = Math.min(aiAssetData.completedTrades * 2, 30);
-    const reviewBonus = Math.min(aiAssetData.reviewCount * 5, 15);
-    const performanceBonus = Math.min(Math.max(stats.winRate - 50, 0), 5);
-    return Math.min(baseLevel + tradesBonus + reviewBonus + performanceBonus, 100);
-  }, [aiAssetData, stats]);
+    // Profit Factor
+    const grossProfit = pnlValues.filter(v => v > 0).reduce((a, b) => a + b, 0);
+    const grossLoss = Math.abs(pnlValues.filter(v => v < 0).reduce((a, b) => a + b, 0));
+    const profitFactor = grossLoss > 0 ? grossProfit / grossLoss : grossProfit > 0 ? Infinity : 0;
+
+    // ATR proxy (avg absolute PnL)
+    const atr = pnlValues.length > 0 
+      ? pnlValues.reduce((a, b) => a + Math.abs(b), 0) / pnlValues.length 
+      : 0;
+
+    return {
+      mdd: maxDrawdown,
+      sharpeRatio,
+      profitFactor: profitFactor === Infinity ? 999 : profitFactor,
+      atr,
+      winRate: stats.winRate,
+    };
+  }, [signals, stats]);
 
   return (
     <div className="min-h-screen bg-background">
@@ -108,7 +128,7 @@ export default function AIMentorAsset() {
                 <Bot className="w-6 h-6 text-primary" />
                 <span className="absolute -bottom-1 -right-1 w-2.5 h-2.5 rounded-full bg-long animate-pulse" />
               </div>
-              <h1 className="text-lg font-bold">AI 멘토 자산 & 성장</h1>
+              <h1 className="text-lg font-bold">Leaf-Master Quantitative Dashboard</h1>
             </div>
           </div>
           <Button 
@@ -124,17 +144,96 @@ export default function AIMentorAsset() {
       </header>
 
       <main className="p-6 space-y-6 max-w-7xl mx-auto">
-        {/* Top Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          {/* Current Asset */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-          >
+        {/* Professional Metrics Cards */}
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+          {/* MDD */}
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
+            <Card className="border-short/20">
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-xs text-muted-foreground">MDD</span>
+                  <TrendingDown className="w-4 h-4 text-short" />
+                </div>
+                <p className="text-xl font-bold font-mono text-short">
+                  -{proMetrics.mdd.toFixed(2)}%
+                </p>
+                <p className="text-[10px] text-muted-foreground mt-1">최대 낙폭</p>
+              </CardContent>
+            </Card>
+          </motion.div>
+
+          {/* Sharpe Ratio */}
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }}>
+            <Card className={cn("border", proMetrics.sharpeRatio >= 1 ? "border-long/20" : "border-border")}>
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-xs text-muted-foreground">Sharpe Ratio</span>
+                  <BarChart3 className="w-4 h-4 text-primary" />
+                </div>
+                <p className={cn("text-xl font-bold font-mono", proMetrics.sharpeRatio >= 1 ? "text-long" : "text-foreground")}>
+                  {proMetrics.sharpeRatio.toFixed(2)}
+                </p>
+                <p className="text-[10px] text-muted-foreground mt-1">위험 조정 수익률</p>
+              </CardContent>
+            </Card>
+          </motion.div>
+
+          {/* Win Rate */}
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
+            <Card className={cn("border", proMetrics.winRate >= 50 ? "border-long/20" : "border-short/20")}>
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-xs text-muted-foreground">Win Rate</span>
+                  <Activity className="w-4 h-4 text-primary" />
+                </div>
+                <p className={cn("text-xl font-bold font-mono", proMetrics.winRate >= 50 ? "text-long" : "text-short")}>
+                  {proMetrics.winRate.toFixed(1)}%
+                </p>
+                <p className="text-[10px] text-muted-foreground mt-1">{stats.totalSignals}건 기준</p>
+              </CardContent>
+            </Card>
+          </motion.div>
+
+          {/* Profit Factor */}
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }}>
+            <Card className={cn("border", proMetrics.profitFactor >= 1.5 ? "border-long/20" : "border-border")}>
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-xs text-muted-foreground">Profit Factor</span>
+                  <Shield className="w-4 h-4 text-primary" />
+                </div>
+                <p className={cn("text-xl font-bold font-mono", proMetrics.profitFactor >= 1.5 ? "text-long" : "text-foreground")}>
+                  {proMetrics.profitFactor >= 999 ? '∞' : proMetrics.profitFactor.toFixed(2)}
+                </p>
+                <p className="text-[10px] text-muted-foreground mt-1">총이익/총손실</p>
+              </CardContent>
+            </Card>
+          </motion.div>
+
+          {/* ATR */}
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
+            <Card>
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-xs text-muted-foreground">ATR (Avg)</span>
+                  <TrendingUp className="w-4 h-4 text-muted-foreground" />
+                </div>
+                <p className="text-xl font-bold font-mono">
+                  {proMetrics.atr.toFixed(2)}%
+                </p>
+                <p className="text-[10px] text-muted-foreground mt-1">평균 변동폭</p>
+              </CardContent>
+            </Card>
+          </motion.div>
+        </div>
+
+        {/* Asset Summary */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
             <Card className="bg-gradient-to-br from-primary/10 to-primary/5 border-primary/20">
               <CardContent className="p-4">
                 <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm text-muted-foreground">AI 현재 자산</span>
+                  <span className="text-sm text-muted-foreground">현재 자산</span>
                   <TrendingUp className="w-4 h-4 text-primary" />
                 </div>
                 <p className="text-2xl font-bold font-mono">
@@ -147,12 +246,7 @@ export default function AIMentorAsset() {
             </Card>
           </motion.div>
 
-          {/* Total Return */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1 }}
-          >
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
             <Card className={cn(
               "border",
               aiAssetData.totalReturnPercent >= 0 
@@ -185,57 +279,6 @@ export default function AIMentorAsset() {
               </CardContent>
             </Card>
           </motion.div>
-
-          {/* AI Tier */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2 }}
-          >
-            <Card className={cn("border", aiTier.bg, `border-current/20`)}>
-              <CardContent className="p-4">
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm text-muted-foreground">AI 등급</span>
-                  <aiTier.icon className={cn("w-4 h-4", aiTier.color)} />
-                </div>
-                <div className="flex items-center gap-2">
-                  <AITierBadge tier={aiTier} />
-                  <span className={cn("text-lg font-bold", aiTier.color)}>
-                    {aiTier.name}
-                  </span>
-                </div>
-                <p className="text-xs text-muted-foreground mt-1">
-                  레벨 {aiTier.level}/5
-                </p>
-              </CardContent>
-            </Card>
-          </motion.div>
-
-          {/* Intelligence Growth */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.3 }}
-          >
-            <Card className="bg-gradient-to-br from-violet-500/10 to-violet-500/5 border-violet-500/20">
-              <CardContent className="p-4">
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm text-muted-foreground">AI 지능 레벨</span>
-                  <Brain className="w-4 h-4 text-violet-500" />
-                </div>
-                <div className="flex items-center gap-2 mb-2">
-                  <span className="text-2xl font-bold text-violet-500">{intelligenceLevel}%</span>
-                  <motion.div
-                    animate={{ y: [0, -3, 0] }}
-                    transition={{ repeat: Infinity, duration: 2 }}
-                  >
-                    <ChevronUp className="w-4 h-4 text-violet-500" />
-                  </motion.div>
-                </div>
-                <Progress value={intelligenceLevel} className="h-2 bg-violet-500/20" />
-              </CardContent>
-            </Card>
-          </motion.div>
         </div>
 
         {/* Main Content Tabs */}
@@ -243,14 +286,14 @@ export default function AIMentorAsset() {
           <TabsList className="grid grid-cols-4 w-full max-w-lg">
             <TabsTrigger value="growth" className="gap-1 text-xs">
               <TrendingUp className="w-3.5 h-3.5" />
-              성장 곡선
+              Equity Curve
             </TabsTrigger>
             <TabsTrigger value="evolution" className="gap-1 text-xs">
               <Dna className="w-3.5 h-3.5" />
-              진화 엔진
+              분석 엔진
             </TabsTrigger>
             <TabsTrigger value="learning" className="gap-1 text-xs">
-              <BookOpen className="w-3.5 h-3.5" />
+              <BarChart3 className="w-3.5 h-3.5" />
               학습 로그
             </TabsTrigger>
             <TabsTrigger value="reviews" className="gap-1 text-xs">
@@ -264,7 +307,7 @@ export default function AIMentorAsset() {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <TrendingUp className="w-5 h-5 text-primary" />
-                  자산 성장 곡선
+                  Equity Curve ($10,000 Seed)
                 </CardTitle>
               </CardHeader>
               <CardContent>
@@ -294,7 +337,7 @@ export default function AIMentorAsset() {
                 <CardTitle className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <Brain className="w-5 h-5 text-violet-500" />
-                    AI 자기 복기 기록
+                    자기 복기 기록
                   </div>
                   <Button 
                     variant="outline" 
@@ -311,7 +354,6 @@ export default function AIMentorAsset() {
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                {/* 자가 수정 보고 */}
                 {dualMemory.weightAdjustments.length > 0 && (
                   <SelfCorrectionReport
                     adjustments={dualMemory.weightAdjustments}
@@ -390,7 +432,6 @@ export default function AIMentorAsset() {
         </div>
       </main>
 
-      {/* Whitelist Settings Modal */}
       <WhitelistSettings 
         isOpen={showSettings} 
         onClose={() => setShowSettings(false)} 

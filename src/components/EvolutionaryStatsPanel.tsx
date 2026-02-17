@@ -1,12 +1,10 @@
 /**
- * EvolutionaryStatsPanel - 자기 진화형 학습 엔진 UI
- * Dual-Memory, Evolutionary Stats, Kelly Criterion, Self-Correction 시각화
+ * EvolutionaryStatsPanel - 분석 엔진 데이터 시각화
+ * Dual-Memory, Kelly Criterion, Self-Correction 시각화 (게임 요소 제거)
  */
 import { cn } from '@/lib/utils';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Brain, Sword, Shield, Eye, Crosshair, Dna, BarChart3, Sparkles } from 'lucide-react';
+import { Brain, Shield, Eye, Crosshair, Sword, BarChart3 } from 'lucide-react';
 import { EvolutionaryStats, KellyCriterionResult, DualMemory } from '@/hooks/useEvolutionaryEngine';
-import { Progress } from '@/components/ui/progress';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
 interface EvolutionaryStatsPanelProps {
@@ -25,56 +23,28 @@ const statConfig = [
 export function EvolutionaryStatsPanel({ stats, kelly, memory }: EvolutionaryStatsPanelProps) {
   return (
     <div className="space-y-4">
-      {/* Evolutionary Stats */}
+      {/* Factor Scores (no levels/skills) */}
       <Card>
         <CardHeader className="pb-3">
           <CardTitle className="flex items-center gap-2 text-base">
-            <Dna className="w-5 h-5 text-violet-500" />
-            진화 스탯
-            <span className="text-sm text-muted-foreground font-normal ml-auto">
-              종합 Lv.{stats.overall}
-            </span>
+            <BarChart3 className="w-5 h-5 text-primary" />
+            Factor Analysis Scores
           </CardTitle>
         </CardHeader>
-        <CardContent className="space-y-3">
-          {statConfig.map(({ key, label, icon: Icon, color }) => (
-            <div key={key}>
-              <div className="flex items-center justify-between text-sm mb-1">
-                <div className="flex items-center gap-2">
+        <CardContent>
+          <div className="grid grid-cols-2 gap-3">
+            {statConfig.map(({ key, label, icon: Icon, color }) => (
+              <div key={key} className="p-3 rounded-lg bg-accent/50 border border-border">
+                <div className="flex items-center gap-2 mb-1">
                   <Icon className={cn("w-4 h-4", color)} />
-                  <span>{label}</span>
+                  <span className="text-xs text-muted-foreground">{label}</span>
                 </div>
-                <span className={cn("font-mono font-semibold", color)}>
+                <span className={cn("text-lg font-mono font-bold", color)}>
                   {stats[key]}
                 </span>
               </div>
-              <Progress value={stats[key]} className="h-2" />
-            </div>
-          ))}
-
-          {/* 획득 스킬 */}
-          {stats.newSkills.length > 0 && (
-            <div className="pt-2 border-t border-border">
-              <div className="flex items-center gap-1.5 mb-2">
-                <Sparkles className="w-4 h-4 text-primary" />
-                <span className="text-xs text-muted-foreground">획득 스킬</span>
-              </div>
-              <div className="flex flex-wrap gap-1.5">
-                <AnimatePresence>
-                  {stats.newSkills.map(skill => (
-                    <motion.span
-                      key={skill}
-                      initial={{ scale: 0, opacity: 0 }}
-                      animate={{ scale: 1, opacity: 1 }}
-                      className="text-[10px] px-2 py-0.5 rounded-full bg-primary/20 text-primary border border-primary/30"
-                    >
-                      ✨ {skill}
-                    </motion.span>
-                  ))}
-                </AnimatePresence>
-              </div>
-            </div>
-          )}
+            ))}
+          </div>
         </CardContent>
       </Card>
 
@@ -140,10 +110,9 @@ export function EvolutionaryStatsPanel({ stats, kelly, memory }: EvolutionarySta
             </div>
           </div>
 
-          {/* Self-Correction 가중치 조정 */}
           {memory.weightAdjustments.length > 0 && (
             <div className="space-y-1.5">
-              <p className="text-[10px] text-muted-foreground font-semibold">🧠 Self-Correction 가중치 조정</p>
+              <p className="text-[10px] text-muted-foreground font-semibold">Self-Correction 가중치 조정</p>
               {memory.weightAdjustments.map((adj, i) => (
                 <div key={i} className="text-[10px] p-2 rounded bg-accent/30 border border-border/50">
                   <div className="flex items-center justify-between mb-0.5">

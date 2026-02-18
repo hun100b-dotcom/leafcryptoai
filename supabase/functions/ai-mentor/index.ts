@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -36,6 +37,11 @@ const SYSTEM_PROMPT = `당신은 'Leaf-Master'입니다. 단순한 챗봇이 아
 - 나스닥 상관관계(r)가 0.8 이상일 경우 거시 지표 가중치 1.5배 상향
 - S_final = (0.4 × Technical) + (0.3 × Sentiment) + (0.3 × Macro)
 
+## RAG 기반 응답
+- 아래 제공되는 [과거 매매 로그]와 [자기 복기 기록]을 반드시 참고하세요.
+- 유사한 시장 구조나 패턴이 있으면 "과거 로그 #N과 유사하며..." 형식으로 언급하세요.
+- 과거 실패에서 배운 교훈을 현재 판단에 반영하세요.
+
 ## 응답 형식
 - 간결하고 명확하게 답변 (3-5문장)
 - 구체적인 가격대와 근거 제시
@@ -68,6 +74,66 @@ function generateLocalFallback(symbol: string, currentPrice: number): string {
 _이 분석은 로컬 폴백이며 AI 정밀 분석이 아닙니다._`;
 }
 
+// RAG: Fetch similar past signals and reviews from DB
+async function fetchRAGContext(supabaseUrl: string, serviceKey: string, symbol: string): Promise<string> {
+  try {
+    const supabase = createClient(supabaseUrl, serviceKey);
+    
+    // Fetch recent signals for this symbol (most relevant)
+    const { data: symbolSignals } = await supabase
+      .from('ai_trading_signals')
+      .select('symbol, position, entry_price, target_price, stop_loss, status, pnl_percent, evidence_reasoning, created_at, closed_at')
+      .eq('symbol', symbol)
+      .in('status', ['WIN', 'LOSS'])
+      .order('created_at', { ascending: false })
+      .limit(5);
+
+    // Fetch recent reviews
+    const { data: reviews } = await supabase
+      .from('ai_self_reviews')
+      .select('review_content, lessons_learned, what_went_well, what_to_improve, win_rate_this_period, created_at')
+      .order('created_at', { ascending: false })
+      .limit(3);
+
+    // Fetch overall stats
+    const { data: allSignals } = await supabase
+      .from('ai_trading_signals')
+      .select('status, pnl_percent')
+      .in('status', ['WIN', 'LOSS']);
+
+    let ragContext = '\n\n## [과거 매매 로그 - RAG 검색 결과]';
+    
+    if (symbolSignals && symbolSignals.length > 0) {
+      ragContext += `\n### ${symbol} 최근 매매 기록:`;
+      symbolSignals.forEach((s, i) => {
+        ragContext += `\n로그 #${i + 1}: ${s.position} @ $${s.entry_price} → ${s.status}(${s.pnl_percent ? (s.pnl_percent > 0 ? '+' : '') + s.pnl_percent.toFixed(1) + '%' : 'N/A'}) | ${s.evidence_reasoning?.substring(0, 100) || '근거 없음'}`;
+      });
+    } else {
+      ragContext += `\n${symbol}에 대한 과거 매매 기록 없음.`;
+    }
+
+    if (allSignals && allSignals.length > 0) {
+      const wins = allSignals.filter(s => s.status === 'WIN').length;
+      const total = allSignals.length;
+      const totalPnl = allSignals.reduce((a, s) => a + (s.pnl_percent || 0), 0);
+      ragContext += `\n\n### 전체 성과 요약: 총 ${total}건, 승률 ${(wins / total * 100).toFixed(1)}%, 누적 PnL: ${totalPnl.toFixed(1)}%`;
+    }
+
+    if (reviews && reviews.length > 0) {
+      ragContext += '\n\n### 자기 복기 기록:';
+      reviews.forEach((r, i) => {
+        ragContext += `\n복기 #${i + 1}: ${r.lessons_learned || r.review_content?.substring(0, 150) || 'N/A'}`;
+        if (r.what_to_improve) ragContext += ` | 개선점: ${r.what_to_improve.substring(0, 100)}`;
+      });
+    }
+
+    return ragContext;
+  } catch (err) {
+    console.error('RAG context fetch error:', err);
+    return '\n\n[RAG 데이터 로딩 실패 - 기본 분석 모드]';
+  }
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -76,14 +142,18 @@ serve(async (req) => {
   try {
     const { message, symbol, currentPrice, position, context } = await req.json();
     const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY");
+    const supabaseUrl = Deno.env.get("SUPABASE_URL") || '';
+    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || '';
     
     if (!GEMINI_API_KEY) {
-      // Fallback: return local analysis instead of error
       const fallback = generateLocalFallback(symbol, currentPrice);
       return new Response(JSON.stringify({ choices: [{ message: { content: fallback } }] }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
+
+    // RAG: Fetch relevant historical context
+    const ragContext = await fetchRAGContext(supabaseUrl, supabaseServiceKey, symbol || 'BTC');
 
     let userMessage = message;
     if (symbol && currentPrice) {
@@ -99,12 +169,13 @@ serve(async (req) => {
 - 현재가: $${currentPrice.toLocaleString()}
 ${positionInfo}
 ${context ? `- 사용자 자산: ${context}` : ''}
+${ragContext}
 
 [질문]
 ${message}`;
     }
 
-    console.log("AI Mentor request:", userMessage);
+    console.log("AI Mentor request (with RAG):", userMessage.substring(0, 500));
 
     const response = await fetch(GEMINI_API_URL, {
       method: "POST",
@@ -136,7 +207,6 @@ ${message}`;
         });
       }
       
-      // Fallback on any other error
       console.error("AI gateway error:", response.status);
       const fallback = generateLocalFallback(symbol, currentPrice);
       return new Response(

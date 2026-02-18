@@ -244,7 +244,7 @@ export function PostMortemReport({ signal }: PostMortemReportProps) {
         </div>
       </div>
 
-      {/* AI Learning Indicator */}
+      {/* Self-Correction Indicator */}
       {isCompleted && (
         <motion.div 
           className="p-4 bg-gradient-to-r from-violet-500/10 to-primary/10 rounded-lg border border-violet-500/30"
@@ -252,20 +252,15 @@ export function PostMortemReport({ signal }: PostMortemReportProps) {
           animate={{ opacity: 1, y: 0 }}
         >
           <div className="flex items-center gap-3">
-            <motion.div
-              animate={{ rotate: [0, 360] }}
-              transition={{ duration: 3, repeat: Infinity, ease: 'linear' }}
-            >
-              <Brain className="w-8 h-8 text-violet-500" />
-            </motion.div>
+            <Brain className="w-8 h-8 text-violet-500" />
             <div>
-              <p className="font-semibold text-violet-500">AI 학습 완료</p>
+              <p className="font-semibold text-violet-500">Post-Mortem 분석 완료</p>
               <p className="text-sm text-muted-foreground">
-                이번 매매로 AI의 {isWin ? '추세 판단' : '손절 대응'} 지능이 <span className="text-violet-500 font-semibold">0.5%</span> 향상되었습니다
+                이 거래 결과는 Dual-Memory System에 반영되어 향후 가중치 조정에 활용됩니다.
+                {isWin ? ' 성공 패턴이 장기 메모리에 기록되었습니다.' : ' 실패 원인이 Self-Correction 엔진에 전달되었습니다.'}
               </p>
             </div>
           </div>
-          <Progress value={75} className="h-1.5 mt-3 bg-violet-500/20" />
         </motion.div>
       )}
     </div>

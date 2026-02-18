@@ -13,6 +13,8 @@ import { CircuitBreakerGauge } from '@/components/CircuitBreakerGauge';
 import { TradeFootprintsOverlay } from '@/components/TradeFootprintsOverlay';
 import { MobileStickyBar } from '@/components/MobileStickyBar';
 import { SelfCorrectionReport } from '@/components/SelfCorrectionReport';
+import { QuantMetricsBar } from '@/components/QuantMetricsBar';
+import { EquityCurveMini } from '@/components/EquityCurveMini';
 import { useBinancePrice } from '@/hooks/useBinancePrice';
 import { useSignals } from '@/hooks/useSignals';
 import { useAISignals } from '@/hooks/useAISignals';
@@ -20,6 +22,8 @@ import { useUserPositions } from '@/hooks/useUserPositions';
 import { useBinanceLongShortRatio } from '@/hooks/useBinanceLongShortRatio';
 import { useCircuitBreaker } from '@/hooks/useCircuitBreaker';
 import { useEvolutionaryEngine } from '@/hooks/useEvolutionaryEngine';
+import { useQuantMetrics } from '@/hooks/useQuantMetrics';
+import { useViewMode } from '@/contexts/ViewModeContext';
 import { mockNews } from '@/data/mockData';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -29,18 +33,16 @@ import { Bot, Bell } from 'lucide-react';
 const Index = () => {
   const [selectedSymbol, setSelectedSymbol] = useState('BTC');
   const [isPerformanceOpen, setIsPerformanceOpen] = useState(false);
+  const { isForcedMobile } = useViewMode();
   
   const { coins, isConnected } = useBinancePrice();
   const { signals, stats, isLoading: signalsLoading } = useSignals();
   const { signals: aiSignals, stats: aiStats, advices } = useAISignals();
   const { positions, stats: userStats, settings } = useUserPositions();
   const { data: ratioData } = useBinanceLongShortRatio(selectedSymbol);
-  
-  // Circuit Breaker 리스크 엔진
   const circuitBreakerState = useCircuitBreaker(aiSignals);
-  
-  // 자기 진화형 학습 엔진 - 대시보드에 자가 수정 결과 표시
   const { dualMemory, evolutionaryStats } = useEvolutionaryEngine(aiSignals);
+  const quantMetrics = useQuantMetrics(aiSignals);
 
   const selectedCoin = useMemo(
     () => coins.find(c => c.symbol === selectedSymbol) || coins[0],
@@ -93,9 +95,11 @@ const Index = () => {
 
   const activeSignalsCount = aiSignals.filter(s => s.status === 'ACTIVE').length;
 
+  // Force mobile layout when viewMode is 'mobile'
+  const hideSidebar = isForcedMobile;
+
   return (
     <div className="min-h-screen flex flex-col bg-background max-w-[100vw] overflow-x-hidden">
-      {/* Sticky Header */}
       <div className="sticky top-0 z-50">
         <Header 
           totalWinRate={aiStatsForPerformance.winRate} 
@@ -105,25 +109,32 @@ const Index = () => {
           onOpenPerformance={() => setIsPerformanceOpen(true)}
         />
       </div>
+
+      {/* Quant Metrics Strip */}
+      <div className="px-3 sm:px-6 py-2 border-b border-border bg-card/50">
+        <QuantMetricsBar metrics={quantMetrics} compact />
+      </div>
       
       <div className="flex-1 flex overflow-hidden">
-        {/* Left Sidebar - Coin List (데스크톱만) */}
-        <motion.aside
-          initial={{ opacity: 0, x: -20 }}
-          animate={{ opacity: 1, x: 0 }}
-          className="w-64 border-r border-border bg-card/30 hidden lg:block flex-shrink-0"
-        >
-          <CoinList
-            coins={coins}
-            selectedSymbol={selectedSymbol}
-            onSelectCoin={setSelectedSymbol}
-          />
-        </motion.aside>
+        {/* Left Sidebar - Coin List */}
+        {!hideSidebar && (
+          <motion.aside
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            className="w-64 border-r border-border bg-card/30 hidden lg:block flex-shrink-0"
+          >
+            <CoinList
+              coins={coins}
+              selectedSymbol={selectedSymbol}
+              onSelectCoin={setSelectedSymbol}
+            />
+          </motion.aside>
+        )}
 
-        {/* Center - Chart & Action Card */}
+        {/* Center */}
         <main className="flex-1 flex flex-col overflow-y-auto scrollbar-thin p-3 sm:p-6 gap-4 sm:gap-6 min-w-0">
-          {/* 모바일: 코인 선택 횡스크롤 */}
-          <div className="flex gap-2 overflow-x-auto scrollbar-thin lg:hidden pb-2">
+          {/* 코인 선택 (모바일 or forced mobile) */}
+          <div className={`flex gap-2 overflow-x-auto scrollbar-thin pb-2 ${hideSidebar ? '' : 'lg:hidden'}`}>
             {coins.slice(0, 8).map(c => (
               <button
                 key={c.symbol}
@@ -138,6 +149,21 @@ const Index = () => {
               </button>
             ))}
           </div>
+
+          {/* Mini Equity Curve */}
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="trading-card p-3"
+          >
+            <div className="flex items-center justify-between mb-1">
+              <span className="text-xs font-semibold text-muted-foreground">Equity Curve ($10,000 Seed)</span>
+              <span className={`text-xs font-mono font-bold ${quantMetrics.totalReturn >= 0 ? 'text-long' : 'text-short'}`}>
+                {quantMetrics.totalReturn >= 0 ? '+' : ''}{quantMetrics.totalReturn.toFixed(1)}%
+              </span>
+            </div>
+            <EquityCurveMini data={quantMetrics.equityCurve} height={100} />
+          </motion.div>
 
           {selectedCoin && (
             <>
@@ -155,7 +181,6 @@ const Index = () => {
                 />
               </motion.div>
 
-              {/* TradingView Chart + Trade Footprints */}
               <motion.div
                 key={selectedSymbol + '-chart'}
                 initial={{ opacity: 0, y: 20 }}
@@ -180,9 +205,8 @@ const Index = () => {
             <SentimentGauge symbol={selectedSymbol} news={mockNews} />
           </motion.div>
 
-          {/* 모바일: AI 리딩 섹션 (xl 이하에서 표시) */}
-          <div className="xl:hidden space-y-4">
-            {/* 자가 수정 보고 (가중치 변경 있을 때만) */}
+          {/* 모바일 / forced mobile: AI 리딩 섹션 */}
+          <div className={`space-y-4 ${hideSidebar ? '' : 'xl:hidden'}`}>
             {dualMemory.weightAdjustments.length > 0 && (
               <SelfCorrectionReport
                 adjustments={dualMemory.weightAdjustments}
@@ -206,79 +230,77 @@ const Index = () => {
           </div>
         </main>
 
-        {/* Right Sidebar - AI 탭 (데스크톱) */}
-        <motion.aside
-          initial={{ opacity: 0, x: 20 }}
-          animate={{ opacity: 1, x: 0 }}
-          className="w-96 border-l border-border bg-card/30 hidden xl:flex flex-col justify-start overflow-y-auto scrollbar-thin flex-shrink-0"
-        >
-          <Tabs defaultValue="ai" className="flex-1 flex flex-col justify-start">
-            <TabsList className="w-full grid grid-cols-1 h-auto p-0 rounded-none bg-card border-b border-border">
-              <TabsTrigger 
-                value="ai" 
-                className="flex items-center gap-1 text-xs py-2.5 rounded-none data-[state=active]:bg-primary/10 data-[state=active]:text-primary border-b-2 border-transparent data-[state=active]:border-primary"
-              >
-                <Bot className="w-3 h-3" />
-                AI 리딩
-              </TabsTrigger>
-            </TabsList>
-            
-            <TabsContent value="ai" className="flex-1 flex flex-col overflow-hidden m-0 p-0">
-              {/* Circuit Breaker 게이지 */}
-              <div className="p-2 border-b border-border">
-                <CircuitBreakerGauge state={circuitBreakerState} compact />
-              </div>
-
-              {/* 자가 수정 보고 (데스크톱 사이드바) */}
-              {dualMemory.weightAdjustments.length > 0 && (
+        {/* Right Sidebar - AI 탭 (데스크톱 & not forced mobile) */}
+        {!hideSidebar && (
+          <motion.aside
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            className="w-96 border-l border-border bg-card/30 hidden xl:flex flex-col justify-start overflow-y-auto scrollbar-thin flex-shrink-0"
+          >
+            <Tabs defaultValue="ai" className="flex-1 flex flex-col justify-start">
+              <TabsList className="w-full grid grid-cols-1 h-auto p-0 rounded-none bg-card border-b border-border">
+                <TabsTrigger 
+                  value="ai" 
+                  className="flex items-center gap-1 text-xs py-2.5 rounded-none data-[state=active]:bg-primary/10 data-[state=active]:text-primary border-b-2 border-transparent data-[state=active]:border-primary"
+                >
+                  <Bot className="w-3 h-3" />
+                  AI 리딩
+                </TabsTrigger>
+              </TabsList>
+              
+              <TabsContent value="ai" className="flex-1 flex flex-col overflow-hidden m-0 p-0">
                 <div className="p-2 border-b border-border">
-                  <SelfCorrectionReport
-                    adjustments={dualMemory.weightAdjustments}
-                    stats={evolutionaryStats}
-                    compact
-                  />
+                  <CircuitBreakerGauge state={circuitBreakerState} compact />
                 </div>
-              )}
 
-              <ResizablePanelGroup direction="vertical" className="flex-1">
-                <ResizablePanel defaultSize={60} minSize={25}>
-                  <div className="h-full overflow-hidden">
-                    <AITimelineEnhanced 
-                      signals={filteredAISignals.length > 0 ? filteredAISignals : aiSignals.slice(0, 5)} 
-                      userAsset={userStats.currentAsset}
+                {dualMemory.weightAdjustments.length > 0 && (
+                  <div className="p-2 border-b border-border">
+                    <SelfCorrectionReport
+                      adjustments={dualMemory.weightAdjustments}
+                      stats={evolutionaryStats}
+                      compact
                     />
                   </div>
-                </ResizablePanel>
-                <ResizableHandle withHandle />
-                <ResizablePanel defaultSize={40} minSize={20}>
-                  <div className="h-full overflow-y-auto scrollbar-thin">
-                    <div className="p-2 border-b border-border flex items-center gap-2 sticky top-0 bg-card/95 backdrop-blur-sm z-10">
-                      <Bell className="w-4 h-4 text-primary" />
-                      <span className="text-xs font-semibold text-muted-foreground">AI 조언 및 긴급알림</span>
+                )}
+
+                <ResizablePanelGroup direction="vertical" className="flex-1">
+                  <ResizablePanel defaultSize={60} minSize={25}>
+                    <div className="h-full overflow-hidden">
+                      <AITimelineEnhanced 
+                        signals={filteredAISignals.length > 0 ? filteredAISignals : aiSignals.slice(0, 5)} 
+                        userAsset={userStats.currentAsset}
+                      />
                     </div>
-                    <div className="p-2">
-                      <AIAdvicePanel />
+                  </ResizablePanel>
+                  <ResizableHandle withHandle />
+                  <ResizablePanel defaultSize={40} minSize={20}>
+                    <div className="h-full overflow-y-auto scrollbar-thin">
+                      <div className="p-2 border-b border-border flex items-center gap-2 sticky top-0 bg-card/95 backdrop-blur-sm z-10">
+                        <Bell className="w-4 h-4 text-primary" />
+                        <span className="text-xs font-semibold text-muted-foreground">AI 조언 및 긴급알림</span>
+                      </div>
+                      <div className="p-2">
+                        <AIAdvicePanel />
+                      </div>
                     </div>
-                  </div>
-                </ResizablePanel>
-              </ResizablePanelGroup>
-            </TabsContent>
-          </Tabs>
-        </motion.aside>
+                  </ResizablePanel>
+                </ResizablePanelGroup>
+              </TabsContent>
+            </Tabs>
+          </motion.aside>
+        )}
       </div>
 
-      <div className="hidden lg:block">
+      <div className={`${hideSidebar ? 'hidden' : 'hidden lg:block'}`}>
         <Footer />
       </div>
 
-      {/* Mobile Sticky Bar */}
       <MobileStickyBar
         totalPnL={aiStatsForPerformance.totalPnL}
         winRate={aiStatsForPerformance.winRate}
         activeSignals={activeSignalsCount}
       />
 
-      {/* AI Mentor Chat */}
       {selectedCoin && (
         <AIMentorChat
           symbol={selectedSymbol}
@@ -300,7 +322,6 @@ const Index = () => {
         />
       )}
 
-      {/* Performance Modal */}
       <AnimatePresence>
         {isPerformanceOpen && (
           <PerformanceModal

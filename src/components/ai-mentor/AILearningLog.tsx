@@ -33,8 +33,7 @@ export function AILearningLog({ signals }: AILearningLogProps) {
     return true;
   });
 
-  // Calculate learning stats
-  const learningProgress = Math.min(completedSignals.length * 2, 100);
+  // Stats for header
 
   return (
     <>
@@ -47,8 +46,8 @@ export function AILearningLog({ signals }: AILearningLogProps) {
             </div>
             <div className="flex items-center gap-2 text-sm font-normal">
               <Brain className="w-4 h-4 text-violet-500" />
-              <span className="text-muted-foreground">학습 진행률:</span>
-              <span className="text-violet-500 font-semibold">{learningProgress}%</span>
+              <span className="text-muted-foreground">분석 완료:</span>
+              <span className="text-violet-500 font-semibold">{completedSignals.length}건</span>
             </div>
           </CardTitle>
         </CardHeader>
@@ -160,13 +159,13 @@ export function AILearningLog({ signals }: AILearningLogProps) {
                     </span>
                   </div>
 
-                  {/* Learning indicator for completed trades */}
+          {/* Post-Mortem indicator for completed trades */}
                   {(signal.status === 'WIN' || signal.status === 'LOSS') && (
                     <div className="mt-2 pt-2 border-t border-border">
                       <div className="flex items-center gap-2 text-xs">
                         <Brain className="w-3 h-3 text-violet-500" />
                         <span className="text-violet-500">
-                          이 거래로 AI 지능이 +0.5% 향상되었습니다
+                          클릭하여 Post-Mortem 상세 분석 보기
                         </span>
                       </div>
                     </div>

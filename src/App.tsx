@@ -3,6 +3,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { ViewModeProvider } from "./contexts/ViewModeContext";
 import Index from "./pages/Index";
 import Positions from "./pages/Positions";
 import AIMentorAsset from "./pages/AIMentorAsset";
@@ -16,13 +17,15 @@ const App = () => (
       <Toaster />
       <Sonner />
       <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<Index />} />
-          <Route path="/positions" element={<Positions />} />
-          <Route path="/ai-mentor" element={<AIMentorAsset />} />
-          {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-          <Route path="*" element={<NotFound />} />
-        </Routes>
+        <ViewModeProvider>
+          <Routes>
+            <Route path="/" element={<Index />} />
+            <Route path="/positions" element={<Positions />} />
+            <Route path="/ai-mentor" element={<AIMentorAsset />} />
+            {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </ViewModeProvider>
       </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>

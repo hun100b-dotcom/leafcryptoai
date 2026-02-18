@@ -8,6 +8,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { Button } from "@/components/ui/button";
+import { useViewMode } from '@/contexts/ViewModeContext';
 
 interface HeaderProps {
   totalWinRate: number;
@@ -17,7 +18,6 @@ interface HeaderProps {
   onOpenPerformance?: () => void;
 }
 
-// Next self-review countdown (daily at midnight UTC)
 function useNextReviewCountdown() {
   const [timeLeft, setTimeLeft] = useState('');
   
@@ -41,7 +41,7 @@ function useNextReviewCountdown() {
 }
 
 export function Header({ totalWinRate, totalPnL, totalSignals, isConnected = true, onOpenPerformance }: HeaderProps) {
-  const [viewMode, setViewMode] = useState<'pc' | 'mobile'>('pc');
+  const { viewMode, setViewMode } = useViewMode();
   const countdown = useNextReviewCountdown();
 
   return (
@@ -82,7 +82,7 @@ export function Header({ totalWinRate, totalPnL, totalSignals, isConnected = tru
             <span className="font-mono font-bold text-violet-400">{countdown}</span>
           </motion.div>
 
-          {/* View Mode Toggle */}
+          {/* View Mode Toggle - Actually switches layout */}
           <motion.div
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}

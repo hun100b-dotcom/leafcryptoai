@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
-import { Zap, TrendingUp, Activity, BarChart3, Wifi, WifiOff, HelpCircle, Wallet, Bot, Monitor, Smartphone, Clock } from 'lucide-react';
+import { Zap, TrendingUp, Activity, BarChart3, Wifi, WifiOff, HelpCircle, Wallet, Bot, Monitor, Smartphone, Clock, RefreshCw, Loader2 } from 'lucide-react';
 import {
   Tooltip,
   TooltipContent,
@@ -9,6 +9,7 @@ import {
 } from "@/components/ui/tooltip";
 import { Button } from "@/components/ui/button";
 import { useViewMode } from '@/contexts/ViewModeContext';
+import { toast } from 'sonner';
 
 interface HeaderProps {
   totalWinRate: number;
@@ -43,6 +44,34 @@ function useNextReviewCountdown() {
 export function Header({ totalWinRate, totalPnL, totalSignals, isConnected = true, onOpenPerformance }: HeaderProps) {
   const { viewMode, setViewMode } = useViewMode();
   const countdown = useNextReviewCountdown();
+  const [isReviewing, setIsReviewing] = useState(false);
+
+  const handleTriggerSelfReview = async () => {
+    setIsReviewing(true);
+    try {
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-self-review`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+          },
+        }
+      );
+      const result = await response.json();
+      if (result.success) {
+        toast.success('자기복기 완료! AI가 최근 매매를 분석했습니다.');
+      } else {
+        toast.info(result.message || '복기할 종료된 시그널이 없습니다.');
+      }
+    } catch (err) {
+      console.error('Self-review error:', err);
+      toast.error('자기복기 실행에 실패했습니다.');
+    } finally {
+      setIsReviewing(false);
+    }
+  };
 
   return (
     <header className="sticky top-0 z-50 border-b border-border bg-card/95 backdrop-blur-sm">
@@ -71,23 +100,31 @@ export function Header({ totalWinRate, totalPnL, totalSignals, isConnected = tru
         </div>
 
         <div className="flex items-center gap-1.5 sm:gap-3 flex-wrap justify-end">
-          {/* Self-Review Countdown */}
+          {/* Self-Review Countdown with Trigger Button */}
           <motion.div
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
-            className="hidden md:flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-violet-500/10 border border-violet-500/20 text-xs"
+            className="flex items-center gap-1.5 px-2 py-1.5 rounded-lg bg-violet-500/10 border border-violet-500/20 text-xs"
           >
             <Clock className="w-3 h-3 text-violet-400" />
-            <span className="text-muted-foreground">복기:</span>
+            <span className="hidden sm:inline text-muted-foreground">복기:</span>
             <span className="font-mono font-bold text-violet-400">{countdown}</span>
+            <button
+              onClick={handleTriggerSelfReview}
+              disabled={isReviewing}
+              className="ml-1 p-0.5 rounded hover:bg-violet-500/20 transition-colors"
+              title="즉시 자기복기 실행"
+            >
+              {isReviewing ? (
+                <Loader2 className="w-3 h-3 text-violet-400 animate-spin" />
+              ) : (
+                <RefreshCw className="w-3 h-3 text-violet-400" />
+              )}
+            </button>
           </motion.div>
 
-          {/* View Mode Toggle - Actually switches layout */}
-          <motion.div
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="hidden lg:flex items-center border border-border rounded-lg overflow-hidden"
-          >
+          {/* View Mode Toggle - Always visible */}
+          <div className="flex items-center border border-border rounded-lg overflow-hidden">
             <button
               onClick={() => setViewMode('pc')}
               className={`p-1.5 transition-colors ${viewMode === 'pc' ? 'bg-primary/20 text-primary' : 'text-muted-foreground hover:bg-accent'}`}
@@ -102,7 +139,7 @@ export function Header({ totalWinRate, totalPnL, totalSignals, isConnected = tru
             >
               <Smartphone className="w-3.5 h-3.5" />
             </button>
-          </motion.div>
+          </div>
 
           {/* AI Mentor Asset Link */}
           <Link to="/ai-mentor">

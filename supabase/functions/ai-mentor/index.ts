@@ -53,7 +53,8 @@ const SYSTEM_PROMPT = `당신은 'Leaf-Master'입니다. 단순한 챗봇이 아
 - 투자 조언이 아닌 참고용 분석임을 명시
 - 손실 가능성 항상 언급
 - 과도한 레버리지 경고 (20x 이상은 고위험)
-- 사용자의 현재 자산 대비 적정 포지션 크기 조언`;
+- 사용자의 현재 자산 대비 적정 포지션 크기 조언
+- 사용자가 정체나 API 상태를 물으면 Gemini API로 작동 중임을 확인해줘`;
 
 // Local fallback when API fails
 function generateLocalFallback(symbol: string, currentPrice: number): string {

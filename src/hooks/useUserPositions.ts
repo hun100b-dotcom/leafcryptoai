@@ -19,13 +19,32 @@ export interface UserPosition {
 export interface UserSettings {
   userId: string;
   initialAsset: number;
+  /** 클라이언트 단위 자동 매매 ON/OFF 스위치 */
+  autoTradingEnabled: boolean;
 }
 
 const DEFAULT_USER_ID = 'default_user';
 
 export function useUserPositions() {
   const [positions, setPositions] = useState<UserPosition[]>([]);
-  const [settings, setSettings] = useState<UserSettings>({ userId: DEFAULT_USER_ID, initialAsset: 1000 });
+  const [settings, setSettings] = useState<UserSettings>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const raw = window.localStorage.getItem('leaf-user-settings-v1');
+        if (raw) {
+          const parsed = JSON.parse(raw) as Partial<UserSettings>;
+          return {
+            userId: parsed.userId || DEFAULT_USER_ID,
+            initialAsset: typeof parsed.initialAsset === 'number' ? parsed.initialAsset : 1000,
+            autoTradingEnabled: !!parsed.autoTradingEnabled,
+          };
+        }
+      } catch {
+        // 무시하고 기본값 사용
+      }
+    }
+    return { userId: DEFAULT_USER_ID, initialAsset: 1000, autoTradingEnabled: false };
+  });
   const [isLoading, setIsLoading] = useState(true);
 
   // Calculate stats for completed positions only (base stats)
@@ -176,10 +195,11 @@ export function useUserPositions() {
       if (error && error.code !== 'PGRST116') throw error;
 
       if (data) {
-        setSettings({
+        setSettings(prev => ({
+          ...prev,
           userId: data.user_id,
           initialAsset: Number(data.initial_asset),
-        });
+        }));
       }
     } catch (err) {
       console.error('Failed to fetch settings:', err);
@@ -223,6 +243,10 @@ export function useUserPositions() {
     if (amount <= 0 || amount > settings.initialAsset) return;
     const newAmount = settings.initialAsset - amount;
     await updateInitialAsset(newAmount);
+  };
+
+  const updateAutoTradingEnabled = (enabled: boolean) => {
+    setSettings(prev => ({ ...prev, autoTradingEnabled: enabled }));
   };
 
   const addPosition = async (position: Omit<UserPosition, 'id' | 'createdAt' | 'status'>) => {
@@ -303,6 +327,20 @@ export function useUserPositions() {
     };
   }, [fetchPositions, fetchSettings]);
 
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    try {
+      const payload = {
+        userId: settings.userId,
+        initialAsset: settings.initialAsset,
+        autoTradingEnabled: settings.autoTradingEnabled,
+      };
+      window.localStorage.setItem('leaf-user-settings-v1', JSON.stringify(payload));
+    } catch {
+      // 로컬 스토리지 실패는 치명적이지 않으므로 무시
+    }
+  }, [settings.userId, settings.initialAsset, settings.autoTradingEnabled]);
+
   return {
     positions,
     settings,
@@ -316,5 +354,6 @@ export function useUserPositions() {
     withdrawAsset,
     calculateRealTimeStats,
     refetch: fetchPositions,
+    updateAutoTradingEnabled,
   };
 }

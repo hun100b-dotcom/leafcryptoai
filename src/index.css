@@ -1,75 +1,83 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,300;0,14..32,400;0,14..32,500;0,14..32,600;0,14..32,700&family=JetBrains+Mono:wght@400;500;600&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
-
 @layer base {
   :root {
-    /* Binance Professional Dark Theme */
-    --background: 220 20% 4%;
-    --foreground: 220 13% 91%;
+    /* ── Ultra Dark Quant Terminal Theme ── */
+    --background: 222 28% 2.5%;
+    --foreground: 220 12% 87%;
 
-    --card: 220 16% 10%;
-    --card-foreground: 220 13% 91%;
+    --card: 222 22% 6%;
+    --card-foreground: 220 12% 87%;
 
-    --popover: 220 16% 10%;
-    --popover-foreground: 220 13% 91%;
+    --popover: 222 22% 6%;
+    --popover-foreground: 220 12% 87%;
 
-    --primary: 43 89% 58%;
-    --primary-foreground: 220 20% 4%;
+    --primary: 43 90% 56%;
+    --primary-foreground: 222 28% 2.5%;
 
-    --secondary: 220 14% 14%;
-    --secondary-foreground: 220 13% 91%;
+    --secondary: 222 16% 11%;
+    --secondary-foreground: 220 12% 87%;
 
-    --muted: 220 14% 14%;
-    --muted-foreground: 220 9% 53%;
+    --muted: 222 16% 11%;
+    --muted-foreground: 220 9% 45%;
 
-    --accent: 220 14% 18%;
-    --accent-foreground: 220 13% 91%;
+    --accent: 222 16% 14%;
+    --accent-foreground: 220 12% 87%;
 
     --destructive: 354 70% 54%;
-    --destructive-foreground: 220 13% 91%;
+    --destructive-foreground: 220 12% 87%;
 
-    --border: 220 13% 18%;
-    --input: 220 13% 18%;
-    --ring: 43 89% 58%;
+    --border: 222 14% 12%;
+    --input: 222 14% 12%;
+    --ring: 43 90% 56%;
 
-    --radius: 0.5rem;
+    --radius: 0.375rem;
 
-    /* Custom Trading Colors */
-    --long: 158 82% 43%;
-    --long-foreground: 220 20% 4%;
-    --short: 354 91% 62%;
-    --short-foreground: 220 13% 91%;
-    --warning: 43 89% 58%;
+    /* ── Trading Signal Colors ── */
+    --long: 158 80% 42%;
+    --long-foreground: 222 28% 2.5%;
+    --short: 354 88% 60%;
+    --short-foreground: 220 12% 87%;
+    --warning: 43 90% 56%;
     --info: 210 100% 52%;
 
-    /* Gradients */
-    --gradient-long: linear-gradient(135deg, hsl(158 82% 43%) 0%, hsl(158 82% 35%) 100%);
-    --gradient-short: linear-gradient(135deg, hsl(354 91% 62%) 0%, hsl(354 91% 50%) 100%);
-    --gradient-gold: linear-gradient(135deg, hsl(43 89% 58%) 0%, hsl(35 89% 45%) 100%);
-    --gradient-card: linear-gradient(180deg, hsl(220 16% 12%) 0%, hsl(220 16% 8%) 100%);
-    
-    /* Shadows */
-    --shadow-glow-long: 0 0 20px hsl(158 82% 43% / 0.3);
-    --shadow-glow-short: 0 0 20px hsl(354 91% 62% / 0.3);
-    --shadow-glow-gold: 0 0 20px hsl(43 89% 58% / 0.3);
-    --shadow-card: 0 4px 24px hsl(220 20% 4% / 0.5);
+    /* ── Gradients ── */
+    --gradient-long: linear-gradient(135deg, hsl(158 80% 42%) 0%, hsl(158 80% 34%) 100%);
+    --gradient-short: linear-gradient(135deg, hsl(354 88% 60%) 0%, hsl(354 88% 48%) 100%);
+    --gradient-gold: linear-gradient(135deg, hsl(43 90% 56%) 0%, hsl(35 90% 43%) 100%);
+    --gradient-card: linear-gradient(180deg, hsl(222 22% 7%) 0%, hsl(222 22% 5%) 100%);
 
-    --sidebar-background: 220 16% 8%;
-    --sidebar-foreground: 220 13% 91%;
-    --sidebar-primary: 43 89% 58%;
-    --sidebar-primary-foreground: 220 20% 4%;
-    --sidebar-accent: 220 14% 14%;
-    --sidebar-accent-foreground: 220 13% 91%;
-    --sidebar-border: 220 13% 18%;
-    --sidebar-ring: 43 89% 58%;
+    /* ── Glow Shadows ── */
+    --shadow-glow-long: 0 0 18px hsl(158 80% 42% / 0.28);
+    --shadow-glow-short: 0 0 18px hsl(354 88% 60% / 0.28);
+    --shadow-glow-gold: 0 0 18px hsl(43 90% 56% / 0.28);
+    --shadow-card: 0 2px 20px hsl(222 28% 2% / 0.7);
+
+    /* ── Panel Dividers ── */
+    --panel-border: 1px solid hsl(222 14% 11%);
+
+    /* ── Glassmorphism ── */
+    --glass-bg: rgba(6, 7, 12, 0.82);
+    --glass-border: rgba(255, 255, 255, 0.045);
+
+    /* ── Sidebar ── */
+    --sidebar-background: 222 22% 4.5%;
+    --sidebar-foreground: 220 12% 87%;
+    --sidebar-primary: 43 90% 56%;
+    --sidebar-primary-foreground: 222 28% 2.5%;
+    --sidebar-accent: 222 16% 11%;
+    --sidebar-accent-foreground: 220 12% 87%;
+    --sidebar-border: 222 14% 12%;
+    --sidebar-ring: 43 90% 56%;
   }
 
   .dark {
-    --background: 220 20% 4%;
-    --foreground: 220 13% 91%;
+    --background: 222 28% 2.5%;
+    --foreground: 220 12% 87%;
   }
 }
 
@@ -78,33 +86,73 @@
     @apply border-border;
   }
 
-  html, body {
+  html,
+  body {
     max-width: 100vw;
     overflow-x: hidden;
   }
 
   body {
-    @apply bg-background text-foreground font-sans antialiased;
+    @apply bg-background text-foreground antialiased;
     font-family: 'Inter', sans-serif;
+    font-weight: 400;
+    letter-spacing: -0.01em;
   }
 
   .font-mono {
     font-family: 'JetBrains Mono', monospace;
   }
 
-  /* Safe area for mobile sticky bars */
   .safe-area-bottom {
     padding-bottom: env(safe-area-inset-bottom, 0px);
   }
 }
 
 @layer components {
+  /* ── Core Card ── */
   .trading-card {
-    @apply bg-card border border-border rounded-lg;
+    @apply rounded-lg border border-border/70;
     background: var(--gradient-card);
     box-shadow: var(--shadow-card);
   }
 
+  /* ── Glassmorphism Panel ── */
+  .glass-panel {
+    background: var(--glass-bg);
+    backdrop-filter: blur(18px);
+    -webkit-backdrop-filter: blur(18px);
+    border: 1px solid var(--glass-border);
+    border-radius: 0.5rem;
+  }
+
+  .glass-bar {
+    background: rgba(8, 9, 15, 0.75);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--glass-border);
+  }
+
+  /* ── Terminal Panels ── */
+  .terminal-panel-left {
+    background: hsl(222 22% 4%);
+    border-right: var(--panel-border);
+  }
+
+  .terminal-panel-center {
+    background: hsl(var(--background));
+  }
+
+  .terminal-panel-right {
+    background: hsl(222 22% 4%);
+    border-left: var(--panel-border);
+  }
+
+  .terminal-panel-bottom {
+    background: hsl(222 22% 4%);
+    border-top: var(--panel-border);
+  }
+
+  /* ── Glow Effects ── */
   .glow-long {
     box-shadow: var(--shadow-glow-long);
   }
@@ -117,33 +165,79 @@
     box-shadow: var(--shadow-glow-gold);
   }
 
+  /* ── Price Flash Animations ── */
   .price-up {
     @apply text-long;
-    animation: flash-green 0.3s ease-out;
+    animation: flash-green 0.35s ease-out;
   }
 
   .price-down {
     @apply text-short;
-    animation: flash-red 0.3s ease-out;
+    animation: flash-red 0.35s ease-out;
   }
 
-  .pulse-dot {
-    @apply relative;
+  /* ── Auto Trade Toggle ── */
+  .auto-trade-switch {
+    @apply relative inline-flex h-5 w-9 cursor-pointer items-center rounded-full transition-all duration-200 focus:outline-none;
   }
 
-  .pulse-dot::before {
-    content: '';
-    @apply absolute w-2 h-2 rounded-full bg-long;
-    animation: pulse-ring 1.5s ease-out infinite;
+  .auto-trade-switch[data-state="on"] {
+    background: hsl(var(--long));
+    box-shadow: 0 0 10px hsl(158 80% 42% / 0.5);
   }
 
+  .auto-trade-switch[data-state="off"] {
+    background: hsl(var(--muted));
+  }
+
+  /* ── Order Buttons ── */
+  .btn-long {
+    @apply py-2.5 px-4 rounded-md font-bold text-sm transition-all duration-150 active:scale-[0.97];
+    background: hsl(158 80% 42% / 0.18);
+    color: hsl(var(--long));
+    border: 1px solid hsl(158 80% 42% / 0.4);
+  }
+
+  .btn-long:hover:not(:disabled) {
+    background: hsl(158 80% 42% / 0.28);
+    border-color: hsl(158 80% 42% / 0.6);
+    box-shadow: 0 0 12px hsl(158 80% 42% / 0.2);
+  }
+
+  .btn-short {
+    @apply py-2.5 px-4 rounded-md font-bold text-sm transition-all duration-150 active:scale-[0.97];
+    background: hsl(354 88% 60% / 0.18);
+    color: hsl(var(--short));
+    border: 1px solid hsl(354 88% 60% / 0.4);
+  }
+
+  .btn-short:hover:not(:disabled) {
+    background: hsl(354 88% 60% / 0.28);
+    border-color: hsl(354 88% 60% / 0.6);
+    box-shadow: 0 0 12px hsl(354 88% 60% / 0.2);
+  }
+
+  .btn-long:disabled,
+  .btn-short:disabled {
+    @apply opacity-35 cursor-not-allowed;
+  }
+
+  /* ── Metric Pill ── */
+  .metric-pill {
+    @apply flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium;
+    background: hsl(222 16% 9%);
+    border: 1px solid hsl(222 14% 14%);
+  }
+
+  /* ── Scrollbar ── */
   .scrollbar-thin {
     scrollbar-width: thin;
     scrollbar-color: hsl(var(--border)) transparent;
   }
 
   .scrollbar-thin::-webkit-scrollbar {
-    width: 6px;
+    width: 4px;
+    height: 4px;
   }
 
   .scrollbar-thin::-webkit-scrollbar-track {
@@ -152,7 +246,28 @@
 
   .scrollbar-thin::-webkit-scrollbar-thumb {
     background: hsl(var(--border));
-    border-radius: 3px;
+    border-radius: 2px;
+  }
+
+  /* ── Coin Row Hover ── */
+  .coin-row {
+    @apply w-full flex items-center justify-between px-3 py-2.5 transition-all duration-150 border-l-2;
+    border-left-color: transparent;
+  }
+
+  .coin-row:hover {
+    background: hsl(222 16% 9%);
+  }
+
+  .coin-row.selected {
+    background: hsl(222 16% 10%);
+    border-left-color: hsl(var(--primary));
+  }
+
+  /* ── Section Header ── */
+  .panel-section-header {
+    @apply px-3 py-2 flex items-center gap-1.5;
+    border-bottom: var(--panel-border);
   }
 }
 
@@ -182,13 +297,14 @@
   }
 }
 
+/* ── Keyframe Animations ── */
 @keyframes flash-green {
-  0% { background-color: hsl(158 82% 43% / 0.3); }
+  0% { background-color: hsl(158 80% 42% / 0.25); }
   100% { background-color: transparent; }
 }
 
 @keyframes flash-red {
-  0% { background-color: hsl(354 91% 62% / 0.3); }
+  0% { background-color: hsl(354 88% 60% / 0.25); }
   100% { background-color: transparent; }
 }
 
@@ -197,11 +313,48 @@
   100% { transform: scale(2.5); opacity: 0; }
 }
 
-@keyframes slide-in {
-  from { transform: translateX(20px); opacity: 0; }
+@keyframes slide-in-right {
+  from { transform: translateX(12px); opacity: 0; }
   to { transform: translateX(0); opacity: 1; }
 }
 
+@keyframes slide-in-up {
+  from { transform: translateY(8px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+@keyframes log-appear {
+  from { transform: translateY(4px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+@keyframes auto-trade-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
 .animate-slide-in {
-  animation: slide-in 0.3s ease-out;
+  animation: slide-in-right 0.25s ease-out;
+}
+
+.animate-slide-up {
+  animation: slide-in-up 0.25s ease-out;
+}
+
+.animate-log {
+  animation: log-appear 0.2s ease-out;
+}
+
+.animate-auto-trade {
+  animation: auto-trade-pulse 1.8s ease-in-out infinite;
+}
+
+.pulse-dot {
+  @apply relative;
+}
+
+.pulse-dot::before {
+  content: '';
+  @apply absolute w-2 h-2 rounded-full bg-long;
+  animation: pulse-ring 1.5s ease-out infinite;
 }

@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { 
   Wallet, TrendingUp, ArrowUpCircle, ArrowDownCircle,
-  Percent, Edit3, Check, X, PiggyBank, DollarSign, Trash2, Loader2
+  Percent, Edit3, Check, X, PiggyBank, DollarSign, Trash2, Loader2, Bot
 } from 'lucide-react';
 import { UserSettings } from '@/hooks/useUserPositions';
 import { supabase } from '@/integrations/supabase/client';
@@ -29,6 +29,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
+import { Switch } from '@/components/ui/switch';
 
 interface PositionStatsProps {
   userStats: {
@@ -54,6 +55,7 @@ interface PositionStatsProps {
   onDeposit: (amount: number) => Promise<void>;
   onWithdraw: (amount: number) => Promise<void>;
   onRefetch?: () => void;
+  onToggleAutoTrading: (enabled: boolean) => void;
 }
 
 export function PositionStats({ 
@@ -63,7 +65,8 @@ export function PositionStats({
   onUpdateInitialAsset,
   onDeposit,
   onWithdraw,
-  onRefetch
+  onRefetch,
+  onToggleAutoTrading,
 }: PositionStatsProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [editValue, setEditValue] = useState(settings.initialAsset.toString());
@@ -366,6 +369,30 @@ export function PositionStats({
             )}
           </motion.div>
         ))}
+      </div>
+
+      {/* Auto Trading Switch */}
+      <div className="mt-3 flex items-center justify-between rounded-lg border border-border bg-card/60 px-3 py-2.5">
+        <div className="flex flex-col gap-0.5">
+          <div className="flex items-center gap-1.5">
+            <Bot className="w-3.5 h-3.5 text-primary" />
+            <span className="text-xs font-semibold text-muted-foreground">
+              자동 매매
+            </span>
+          </div>
+          <p className="text-[11px] text-muted-foreground">
+            AI 시그널이 발생하면 설정된 규칙에 따라 자동으로 진입합니다.
+          </p>
+        </div>
+        <div className="flex items-center gap-2">
+          <span className="text-[11px] text-muted-foreground">
+            {settings.autoTradingEnabled ? 'ON' : 'OFF'}
+          </span>
+          <Switch
+            checked={settings.autoTradingEnabled}
+            onCheckedChange={(checked) => onToggleAutoTrading?.(!!checked)}
+          />
+        </div>
       </div>
 
       {/* Reset Buttons Section */}

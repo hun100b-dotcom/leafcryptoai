@@ -1,20 +1,20 @@
 import { useState, useMemo } from 'react';
 import { Header } from '@/components/Header';
 import { CoinList } from '@/components/CoinList';
-import { ActionCard } from '@/components/ActionCard';
 import { TradingViewChart } from '@/components/TradingViewChart';
 import { SentimentGauge } from '@/components/SentimentGauge';
 import { AITimelineEnhanced } from '@/components/AITimelineEnhanced';
 import { Footer } from '@/components/Footer';
 import { PerformanceModal } from '@/components/PerformanceModal';
 import { AIMentorChat } from '@/components/AIMentorChat';
-import { AIAdvicePanel } from '@/components/AIAdvicePanel';
 import { CircuitBreakerGauge } from '@/components/CircuitBreakerGauge';
 import { TradeFootprintsOverlay } from '@/components/TradeFootprintsOverlay';
 import { MobileStickyBar } from '@/components/MobileStickyBar';
 import { SelfCorrectionReport } from '@/components/SelfCorrectionReport';
 import { QuantMetricsBar } from '@/components/QuantMetricsBar';
 import { EquityCurveMini } from '@/components/EquityCurveMini';
+import { RightAnalysisPanel } from '@/components/RightAnalysisPanel';
+import { AILiveThinkingLog } from '@/components/ai-mentor/AILiveThinkingLog';
 import { useBinancePrice } from '@/hooks/useBinancePrice';
 import { useSignals } from '@/hooks/useSignals';
 import { useAISignals } from '@/hooks/useAISignals';
@@ -24,304 +24,444 @@ import { useCircuitBreaker } from '@/hooks/useCircuitBreaker';
 import { useEvolutionaryEngine } from '@/hooks/useEvolutionaryEngine';
 import { useQuantMetrics } from '@/hooks/useQuantMetrics';
 import { useViewMode } from '@/contexts/ViewModeContext';
+import { useAIManagedPositions } from '@/hooks/useAIManagedPositions';
+import { useAutoTradingEngine } from '@/hooks/useAutoTradingEngine';
 import { mockNews } from '@/data/mockData';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from '@/components/ui/resizable';
-import { Bot, Bell } from 'lucide-react';
+import { AnimatePresence } from 'framer-motion';
+import { cn } from '@/lib/utils';
+import { TrendingUp, TrendingDown, Zap, BarChart2, Layers } from 'lucide-react';
+
+/* ─── Strategy Selector ─── */
+type Strategy = 'conservative' | 'balanced' | 'aggressive';
+
+const STRATEGIES: { id: Strategy; label: string; leverage: string }[] = [
+  { id: 'conservative', label: '보수형', leverage: '≤5x' },
+  { id: 'balanced',     label: '균형형', leverage: '≤10x' },
+  { id: 'aggressive',   label: '공격형', leverage: '≤20x' },
+];
+
+/**
+ * STICKY_TOP — 헤더(~52px) + 퀀트 메트릭 바(~36px) 합산 높이
+ * 사이드바의 sticky top 기준점이 됩니다.
+ */
+const STICKY_TOP = 88; // px
 
 const Index = () => {
   const [selectedSymbol, setSelectedSymbol] = useState('BTC');
   const [isPerformanceOpen, setIsPerformanceOpen] = useState(false);
+  const [strategy, setStrategy] = useState<Strategy>('balanced');
   const { isForcedMobile } = useViewMode();
-  
+
+  /* ── Data Hooks ── */
   const { coins, isConnected } = useBinancePrice();
-  const { signals, stats, isLoading: signalsLoading } = useSignals();
-  const { signals: aiSignals, stats: aiStats, advices } = useAISignals();
-  const { positions, stats: userStats, settings } = useUserPositions();
+  const { stats: _signalStats } = useSignals();
+  const { signals: aiSignals, stats: aiStats } = useAISignals();
+  const { positions, stats: userStats, settings, updateAutoTradingEnabled } = useUserPositions();
   const { data: ratioData } = useBinanceLongShortRatio(selectedSymbol);
   const circuitBreakerState = useCircuitBreaker(aiSignals);
   const { dualMemory, evolutionaryStats } = useEvolutionaryEngine(aiSignals);
   const quantMetrics = useQuantMetrics(aiSignals);
+  const { positions: aiManagedPositions, joinSignal } = useAIManagedPositions();
 
+  /* ── Derived State ── */
   const selectedCoin = useMemo(
-    () => coins.find(c => c.symbol === selectedSymbol) || coins[0],
-    [selectedSymbol, coins]
+    () => coins.find((c) => c.symbol === selectedSymbol) ?? coins[0],
+    [selectedSymbol, coins],
   );
 
   const activeAISignal = useMemo(
-    () => aiSignals.find(s => s.symbol === selectedSymbol && s.status === 'ACTIVE'),
-    [selectedSymbol, aiSignals]
+    () => aiSignals.find((s) => s.symbol === selectedSymbol && s.status === 'ACTIVE'),
+    [selectedSymbol, aiSignals],
   );
 
   const filteredAISignals = useMemo(
-    () => aiSignals.filter(s => s.symbol === selectedSymbol),
-    [selectedSymbol, aiSignals]
+    () => aiSignals.filter((s) => s.symbol === selectedSymbol),
+    [selectedSymbol, aiSignals],
   );
 
   const activeUserPosition = useMemo(
-    () => positions.find(p => p.symbol === selectedSymbol && p.status === 'ACTIVE'),
-    [selectedSymbol, positions]
+    () => positions.find((p) => p.symbol === selectedSymbol && p.status === 'ACTIVE'),
+    [selectedSymbol, positions],
   );
 
-  const aiSignalsForPerformance = useMemo(() => {
-    return aiSignals.map((s) => ({
-      id: s.id,
-      symbol: s.symbol,
-      position: s.position,
-      entryPrice: s.entryPrice,
-      targetPrice: s.targetPrice,
-      stopLoss: s.stopLoss,
-      leverage: s.leverage,
-      timestamp: s.createdAt,
-      confidence: s.confidence,
-      status: (s.status === 'CANCELLED' ? 'PENDING' : s.status) as any,
-      message: s.evidenceReasoning ?? '',
-      closedAt: s.closedAt ?? undefined,
-      closePrice: s.closePrice ?? undefined,
-    }));
-  }, [aiSignals]);
+  const aiSignalsForPerformance = useMemo(
+    () =>
+      aiSignals.map((s) => ({
+        id: s.id,
+        symbol: s.symbol,
+        position: s.position,
+        entryPrice: s.entryPrice,
+        targetPrice: s.targetPrice,
+        stopLoss: s.stopLoss,
+        leverage: s.leverage,
+        timestamp: s.createdAt,
+        confidence: s.confidence,
+        status: (s.status === 'CANCELLED' ? 'PENDING' : s.status) as 'ACTIVE' | 'WIN' | 'LOSS' | 'PENDING',
+        message: s.evidenceReasoning ?? '',
+        closedAt: s.closedAt ?? undefined,
+        closePrice: s.closePrice ?? undefined,
+      })),
+    [aiSignals],
+  );
 
-  const aiStatsForPerformance = useMemo(() => {
-    return {
+  const aiStatsForPerformance = useMemo(
+    () => ({
       totalSignals: aiSignalsForPerformance.length,
       completedSignals: aiStats.totalSignals,
       wins: aiStats.wins,
       losses: aiStats.losses,
       winRate: Math.round(aiStats.winRate),
       totalPnL: Math.round(aiStats.totalPnl * 10) / 10,
-    };
-  }, [aiSignalsForPerformance, aiStats]);
+    }),
+    [aiSignalsForPerformance, aiStats],
+  );
 
-  const activeSignalsCount = aiSignals.filter(s => s.status === 'ACTIVE').length;
+  const activeSignalsCount = aiSignals.filter((s) => s.status === 'ACTIVE').length;
 
-  // Force mobile layout when viewMode is 'mobile'
-  const hideSidebar = isForcedMobile;
+  /* ── Auto-Trading Engine ── */
+  useAutoTradingEngine({
+    aiSignals,
+    managedPositions: aiManagedPositions,
+    settings,
+    userCurrentAsset: userStats.currentAsset,
+    circuitBreaker: circuitBreakerState,
+    joinSignal,
+  });
 
+  /* ── Shared mentor chat props ── */
+  const mentorChatProps = selectedCoin
+    ? {
+        symbol: selectedSymbol,
+        currentPrice: selectedCoin.price,
+        userAsset: userStats.currentAsset,
+        userPosition: activeUserPosition
+          ? {
+              type: activeUserPosition.position,
+              entryPrice: activeUserPosition.entryPrice,
+              targetPrice: activeUserPosition.targetPrice,
+              stopLoss: activeUserPosition.stopLoss,
+              leverage: activeUserPosition.leverage,
+            }
+          : undefined,
+        allPositions: positions
+          .filter((p) => p.status === 'ACTIVE')
+          .map((p) => ({
+            symbol: p.symbol,
+            type: p.position,
+            entryPrice: p.entryPrice,
+            leverage: p.leverage,
+          })),
+      }
+    : null;
+
+  /* ════════════════════════════════════════════
+     MOBILE LAYOUT — 단순 수직 스크롤
+  ════════════════════════════════════════════ */
+  if (isForcedMobile) {
+    return (
+      <div className="min-h-screen flex flex-col bg-background overflow-x-hidden">
+        <div className="sticky top-0 z-50">
+          <Header
+            totalWinRate={aiStatsForPerformance.winRate}
+            totalPnL={aiStatsForPerformance.totalPnL}
+            totalSignals={aiStatsForPerformance.completedSignals}
+            isConnected={isConnected}
+            onOpenPerformance={() => setIsPerformanceOpen(true)}
+            autoTradingEnabled={settings.autoTradingEnabled}
+            onToggleAutoTrading={updateAutoTradingEnabled}
+          />
+        </div>
+        <div className="px-3 py-2 border-b border-border/60">
+          <QuantMetricsBar metrics={quantMetrics} compact />
+        </div>
+        <div className="flex gap-1.5 overflow-x-auto scrollbar-thin px-3 py-2 border-b border-border/50">
+          {coins.slice(0, 8).map((c) => (
+            <button
+              key={c.symbol}
+              onClick={() => setSelectedSymbol(c.symbol)}
+              className={cn(
+                'flex-shrink-0 px-3 py-1 rounded-md text-[11px] font-semibold transition-all',
+                selectedSymbol === c.symbol
+                  ? 'bg-primary/20 text-primary'
+                  : 'bg-accent/50 text-muted-foreground hover:text-foreground',
+              )}
+            >
+              {c.symbol}
+            </button>
+          ))}
+        </div>
+        <main className="flex-1 flex flex-col p-3 gap-3">
+          {selectedCoin && (
+            <div className="trading-card p-0 overflow-hidden relative" style={{ height: 'clamp(240px, 42vh, 380px)' }}>
+              <TradingViewChart symbol={selectedSymbol} />
+              <TradeFootprintsOverlay
+                signals={filteredAISignals.length > 0 ? filteredAISignals : aiSignals.slice(0, 5)}
+              />
+            </div>
+          )}
+          <div className="trading-card overflow-hidden" style={{ maxHeight: '55vh' }}>
+            <AITimelineEnhanced
+              signals={filteredAISignals.length > 0 ? filteredAISignals : aiSignals.slice(0, 5)}
+              userAsset={userStats.currentAsset}
+            />
+          </div>
+          <div className="trading-card overflow-hidden">
+            <AILiveThinkingLog />
+          </div>
+        </main>
+        <MobileStickyBar
+          totalPnL={aiStatsForPerformance.totalPnL}
+          winRate={aiStatsForPerformance.winRate}
+          activeSignals={activeSignalsCount}
+        />
+        {mentorChatProps && <AIMentorChat {...mentorChatProps} />}
+        <AnimatePresence>
+          {isPerformanceOpen && (
+            <PerformanceModal
+              isOpen={isPerformanceOpen}
+              onClose={() => setIsPerformanceOpen(false)}
+              signals={aiSignalsForPerformance}
+              stats={aiStatsForPerformance}
+            />
+          )}
+        </AnimatePresence>
+      </div>
+    );
+  }
+
+  /* ════════════════════════════════════════════
+     DESKTOP — Sticky Sidebar Architecture
+     ────────────────────────────────────────────
+     구조:
+       [sticky header zone]   ← 88px 고정
+       [3-col grid]           ← 자연 높이로 흐름
+         left  : sticky sidebar, h-[calc(100vh-88px)], overflow-y-auto (스크롤 1개)
+         center: 자연 흐름 (단일 페이지 스크롤)
+         right : sticky sidebar, h-[calc(100vh-88px)], overflow-y-auto (스크롤 1개)
+       [AI log full-width]    ← 자연 높이
+       [footer]
+  ════════════════════════════════════════════ */
   return (
-    <div className="min-h-screen flex flex-col bg-background max-w-[100vw] overflow-x-hidden">
-      <div className="sticky top-0 z-50">
-        <Header 
-          totalWinRate={aiStatsForPerformance.winRate} 
-          totalPnL={aiStatsForPerformance.totalPnL} 
+    <div className="min-h-screen flex flex-col bg-background overflow-x-hidden">
+
+      {/* ══ STICKY HEADER ZONE ══════════════════════════════════════════════ */}
+      {/* BEFORE: Header와 QuantMetrics가 각각 별도 렌더 → 위치 계산 어려움   */}
+      {/* AFTER : 하나의 sticky 컨테이너로 묶어 정확한 88px 기준점 확보       */}
+      <div className="sticky top-0 z-50 flex flex-col flex-shrink-0">
+        <Header
+          totalWinRate={aiStatsForPerformance.winRate}
+          totalPnL={aiStatsForPerformance.totalPnL}
           totalSignals={aiStatsForPerformance.completedSignals}
           isConnected={isConnected}
           onOpenPerformance={() => setIsPerformanceOpen(true)}
+          autoTradingEnabled={settings.autoTradingEnabled}
+          onToggleAutoTrading={updateAutoTradingEnabled}
         />
+        <div className="px-4 py-2 border-b border-border/50 bg-card/30 backdrop-blur-sm">
+          <QuantMetricsBar metrics={quantMetrics} compact />
+        </div>
       </div>
 
-      {/* Quant Metrics Strip */}
-      <div className="px-3 sm:px-6 py-2 border-b border-border bg-card/50">
-        <QuantMetricsBar metrics={quantMetrics} compact />
-      </div>
-      
-      <div className="flex-1 flex overflow-hidden">
-        {/* Left Sidebar - Coin List */}
-        {!hideSidebar && (
-          <motion.aside
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-            className="w-64 border-r border-border bg-card/30 hidden lg:block flex-shrink-0"
-          >
-            <CoinList
-              coins={coins}
-              selectedSymbol={selectedSymbol}
-              onSelectCoin={setSelectedSymbol}
-            />
-          </motion.aside>
-        )}
+      {/* ══ 3-COLUMN GRID ══════════════════════════════════════════════════ */}
+      {/* BEFORE: flex-1 overflow-hidden min-h-0 → 각 컬럼 강제 고정 높이    */}
+      {/* AFTER : items-start → 컬럼들이 자연 높이로 흐름, 페이지 스크롤 가능 */}
+      <div className="grid grid-cols-[220px_1fr_290px] xl:grid-cols-[240px_1fr_300px] items-start flex-1">
 
-        {/* Center */}
-        <main className="flex-1 flex flex-col overflow-y-auto scrollbar-thin p-3 sm:p-6 gap-4 sm:gap-6 min-w-0">
-          {/* 코인 선택 (모바일 or forced mobile) */}
-          <div className={`flex gap-2 overflow-x-auto scrollbar-thin pb-2 ${hideSidebar ? '' : 'lg:hidden'}`}>
-            {coins.slice(0, 8).map(c => (
-              <button
-                key={c.symbol}
-                onClick={() => setSelectedSymbol(c.symbol)}
-                className={`flex-shrink-0 px-3 py-1.5 rounded-full text-xs font-medium border transition-all ${
-                  selectedSymbol === c.symbol
-                    ? 'bg-primary/20 border-primary text-primary'
-                    : 'bg-card border-border text-muted-foreground'
-                }`}
-              >
-                {c.symbol}
-              </button>
-            ))}
-          </div>
+        {/* ── LEFT SIDEBAR — Sticky ──────────────────────────────────────── */}
+        {/* BEFORE: overflow-hidden → CoinList 내부에 별도 스크롤 생성          */}
+        {/* AFTER : sticky + h-[calc(100vh-88px)] + overflow-y-auto 단 1개    */}
+        <aside
+          className="terminal-panel-left flex flex-col overflow-y-auto scrollbar-thin"
+          style={{ position: 'sticky', top: STICKY_TOP, height: `calc(100vh - ${STICKY_TOP}px)` }}
+        >
+          {/* Watchlist */}
+          <CoinList
+            coins={coins}
+            selectedSymbol={selectedSymbol}
+            onSelectCoin={setSelectedSymbol}
+          />
 
-          {/* Mini Equity Curve */}
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="trading-card p-3"
-          >
-            <div className="flex items-center justify-between mb-1">
-              <span className="text-xs font-semibold text-muted-foreground">Equity Curve ($10,000 Seed)</span>
-              <span className={`text-xs font-mono font-bold ${quantMetrics.totalReturn >= 0 ? 'text-long' : 'text-short'}`}>
-                {quantMetrics.totalReturn >= 0 ? '+' : ''}{quantMetrics.totalReturn.toFixed(1)}%
+          {/* Strategy Selector */}
+          <div className="flex-shrink-0 border-t border-border/50 p-2.5">
+            <div className="flex items-center gap-1.5 mb-2">
+              <Layers className="w-3 h-3 text-muted-foreground" />
+              <span className="text-[9px] font-semibold uppercase tracking-widest text-muted-foreground">
+                AI 전략
               </span>
             </div>
-            <EquityCurveMini data={quantMetrics.equityCurve} height={100} />
-          </motion.div>
+            <div className="grid grid-cols-3 gap-1">
+              {STRATEGIES.map((s) => (
+                <button
+                  key={s.id}
+                  onClick={() => setStrategy(s.id)}
+                  className={cn(
+                    'p-1.5 rounded-md text-center transition-all border text-[9px]',
+                    strategy === s.id
+                      ? 'bg-primary/15 border-primary/35 text-primary'
+                      : 'bg-accent/20 border-border/40 text-muted-foreground hover:text-foreground hover:bg-accent/40',
+                  )}
+                >
+                  <p className="font-semibold leading-none">{s.label}</p>
+                  <p className="text-muted-foreground/60 mt-0.5">{s.leverage}</p>
+                </button>
+              ))}
+            </div>
+          </div>
 
+          {/* Mini P&L Equity Curve */}
+          <div className="flex-shrink-0 border-t border-border/50 p-2.5">
+            <div className="flex items-center justify-between mb-1.5">
+              <div className="flex items-center gap-1.5">
+                <BarChart2 className="w-3 h-3 text-muted-foreground" />
+                <span className="text-[9px] font-semibold uppercase tracking-widest text-muted-foreground">
+                  Equity P&amp;L
+                </span>
+              </div>
+              <span className={cn(
+                'font-mono text-[11px] font-bold',
+                quantMetrics.totalReturn >= 0 ? 'text-long' : 'text-short',
+              )}>
+                {quantMetrics.totalReturn >= 0 ? '+' : ''}
+                {quantMetrics.totalReturn.toFixed(1)}%
+              </span>
+            </div>
+            <EquityCurveMini data={quantMetrics.equityCurve} height={64} />
+          </div>
+        </aside>
+
+        {/* ── CENTER COLUMN — Natural Flow ──────────────────────────────── */}
+        {/* BEFORE: flex flex-col overflow-hidden → 차트가 flex-1로 수축       */}
+        {/* AFTER : 자연 흐름 → 차트는 고정 높이, 하위 콘텐츠는 그 아래로 흐름  */}
+        <main className="terminal-panel-center flex flex-col min-w-0">
+
+          {/* Coin Header Bar */}
           {selectedCoin && (
-            <>
-              <motion.div
-                key={selectedSymbol + '-action'}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.1 }}
-              >
-                <ActionCard
-                  coin={selectedCoin}
-                  activeAISignal={activeAISignal}
-                  longRatio={ratioData?.longRatio}
-                  circuitBreaker={circuitBreakerState}
-                />
-              </motion.div>
+            <div className="flex items-center gap-3 px-4 py-2.5 border-b border-border/50 bg-card/30">
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="font-bold text-sm">
+                  {selectedCoin.symbol}
+                  <span className="text-muted-foreground font-normal">/USDT</span>
+                </span>
+                <span className="font-mono text-base font-bold">
+                  ${selectedCoin.price.toLocaleString(undefined, { maximumFractionDigits: 2 })}
+                </span>
+                <span className={cn(
+                  'flex items-center gap-0.5 text-xs font-semibold font-mono px-1.5 py-0.5 rounded',
+                  selectedCoin.change24h >= 0 ? 'text-long bg-long/10' : 'text-short bg-short/10',
+                )}>
+                  {selectedCoin.change24h >= 0 ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
+                  {selectedCoin.change24h >= 0 ? '+' : ''}{selectedCoin.change24h.toFixed(2)}%
+                </span>
+              </div>
 
-              <motion.div
-                key={selectedSymbol + '-chart'}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.2 }}
-                className="trading-card p-0 overflow-hidden relative"
-                style={{ height: 'clamp(300px, 50vh, 500px)' }}
-              >
-                <TradingViewChart symbol={selectedSymbol} />
-                <TradeFootprintsOverlay
-                  signals={filteredAISignals.length > 0 ? filteredAISignals : aiSignals.slice(0, 5)}
-                />
-              </motion.div>
-            </>
+              {activeAISignal && (
+                <div className={cn(
+                  'ml-auto flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[10px] font-semibold border',
+                  activeAISignal.position === 'LONG'
+                    ? 'bg-long/10 border-long/30 text-long'
+                    : 'bg-short/10 border-short/30 text-short',
+                )}>
+                  {activeAISignal.position === 'LONG'
+                    ? <TrendingUp className="w-3 h-3" />
+                    : <TrendingDown className="w-3 h-3" />}
+                  AI {activeAISignal.position} {activeAISignal.confidence.toFixed(0)}%
+                  <Zap className="w-2.5 h-2.5 animate-pulse" />
+                </div>
+              )}
+
+              {!activeAISignal && circuitBreakerState.isCoolingDown && (
+                <div className="ml-auto flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[10px] font-semibold bg-short/10 border border-short/30 text-short">
+                  ⚡ 서킷 브레이커
+                </div>
+              )}
+            </div>
           )}
 
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.3 }}
-          >
-            <SentimentGauge symbol={selectedSymbol} news={mockNews} />
-          </motion.div>
+          {/* TradingView Chart — 고정 높이로 충분한 공간 확보 */}
+          {/* BEFORE: flex-1 overflow-hidden min-h-0 → 다른 요소에 의해 수축   */}
+          {/* AFTER : 고정 clamp 높이 → 항상 충분한 차트 영역 보장            */}
+          {selectedCoin && (
+            <div
+              className="relative w-full border-b border-border/40"
+              style={{ height: 'clamp(400px, 52vh, 680px)' }}
+            >
+              <TradingViewChart symbol={selectedSymbol} />
+              <TradeFootprintsOverlay
+                signals={filteredAISignals.length > 0 ? filteredAISignals : aiSignals.slice(0, 5)}
+              />
+            </div>
+          )}
 
-          {/* 모바일 / forced mobile: AI 리딩 섹션 */}
-          <div className={`space-y-4 ${hideSidebar ? '' : 'xl:hidden'}`}>
-            {dualMemory.weightAdjustments.length > 0 && (
+          {/* Sentiment Gauge — 자연 높이로 표시 */}
+          {/* BEFORE: max-h-[200px] overflow-y-auto → 개별 스크롤 발생        */}
+          {/* AFTER : 제한 없이 자연 흐름 → 페이지 스크롤에 통합              */}
+          <div className="border-b border-border/40">
+            <SentimentGauge symbol={selectedSymbol} news={mockNews} />
+          </div>
+
+          {/* AI Live Thinking Log — Center 하단 통합 */}
+          {/* BEFORE: 별도 fixed-height 하단 패널 → 차트 공간 잠식             */}
+          {/* AFTER : 중앙 컬럼 하단에 자연스럽게 배치 → 페이지 스크롤로 도달  */}
+          <div className="border-b border-border/40 bg-card/15">
+            <AILiveThinkingLog />
+          </div>
+        </main>
+
+        {/* ── RIGHT SIDEBAR — Sticky ─────────────────────────────────────── */}
+        {/* BEFORE: overflow-hidden + 내부 max-h-[45%] overflow-y-auto 중첩    */}
+        {/* AFTER : sticky + 단일 overflow-y-auto → 스크롤 1개만 허용         */}
+        <aside
+          className="terminal-panel-right flex flex-col overflow-y-auto scrollbar-thin"
+          style={{ position: 'sticky', top: STICKY_TOP, height: `calc(100vh - ${STICKY_TOP}px)` }}
+        >
+          {/* Self Correction Report */}
+          {dualMemory.weightAdjustments.length > 0 && (
+            <div className="p-2.5 border-b border-border/40 flex-shrink-0">
               <SelfCorrectionReport
                 adjustments={dualMemory.weightAdjustments}
                 stats={evolutionaryStats}
                 compact
               />
-            )}
-            <div className="trading-card overflow-hidden" style={{ maxHeight: '60vh' }}>
-              <AITimelineEnhanced
-                signals={filteredAISignals.length > 0 ? filteredAISignals : aiSignals.slice(0, 5)}
-                userAsset={userStats.currentAsset}
-              />
             </div>
-            <div className="trading-card p-3">
-              <div className="flex items-center gap-2 mb-2">
-                <Bell className="w-4 h-4 text-primary" />
-                <span className="text-xs font-semibold text-muted-foreground">AI 조언 및 긴급알림</span>
-              </div>
-              <AIAdvicePanel />
-            </div>
+          )}
+
+          {/* Circuit Breaker */}
+          <div className="p-2.5 border-b border-border/40 flex-shrink-0">
+            <CircuitBreakerGauge state={circuitBreakerState} compact />
           </div>
-        </main>
 
-        {/* Right Sidebar - AI 탭 (데스크톱 & not forced mobile) */}
-        {!hideSidebar && (
-          <motion.aside
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            className="w-96 border-l border-border bg-card/30 hidden xl:flex flex-col justify-start overflow-y-auto scrollbar-thin flex-shrink-0"
-          >
-            <Tabs defaultValue="ai" className="flex-1 flex flex-col justify-start">
-              <TabsList className="w-full grid grid-cols-1 h-auto p-0 rounded-none bg-card border-b border-border">
-                <TabsTrigger 
-                  value="ai" 
-                  className="flex items-center gap-1 text-xs py-2.5 rounded-none data-[state=active]:bg-primary/10 data-[state=active]:text-primary border-b-2 border-transparent data-[state=active]:border-primary"
-                >
-                  <Bot className="w-3 h-3" />
-                  AI 리딩
-                </TabsTrigger>
-              </TabsList>
-              
-              <TabsContent value="ai" className="flex-1 flex flex-col overflow-hidden m-0 p-0">
-                <div className="p-2 border-b border-border">
-                  <CircuitBreakerGauge state={circuitBreakerState} compact />
-                </div>
+          {/* AI Signal Timeline */}
+          <div className="flex-shrink-0 border-b border-border/40">
+            <AITimelineEnhanced
+              signals={filteredAISignals.length > 0 ? filteredAISignals : aiSignals.slice(0, 5)}
+              userAsset={userStats.currentAsset}
+            />
+          </div>
 
-                {dualMemory.weightAdjustments.length > 0 && (
-                  <div className="p-2 border-b border-border">
-                    <SelfCorrectionReport
-                      adjustments={dualMemory.weightAdjustments}
-                      stats={evolutionaryStats}
-                      compact
-                    />
-                  </div>
-                )}
-
-                <ResizablePanelGroup direction="vertical" className="flex-1">
-                  <ResizablePanel defaultSize={60} minSize={25}>
-                    <div className="h-full overflow-hidden">
-                      <AITimelineEnhanced 
-                        signals={filteredAISignals.length > 0 ? filteredAISignals : aiSignals.slice(0, 5)} 
-                        userAsset={userStats.currentAsset}
-                      />
-                    </div>
-                  </ResizablePanel>
-                  <ResizableHandle withHandle />
-                  <ResizablePanel defaultSize={40} minSize={20}>
-                    <div className="h-full overflow-y-auto scrollbar-thin">
-                      <div className="p-2 border-b border-border flex items-center gap-2 sticky top-0 bg-card/95 backdrop-blur-sm z-10">
-                        <Bell className="w-4 h-4 text-primary" />
-                        <span className="text-xs font-semibold text-muted-foreground">AI 조언 및 긴급알림</span>
-                      </div>
-                      <div className="p-2">
-                        <AIAdvicePanel />
-                      </div>
-                    </div>
-                  </ResizablePanel>
-                </ResizablePanelGroup>
-              </TabsContent>
-            </Tabs>
-          </motion.aside>
-        )}
+          {/* AI Analysis Panel + Order Buttons */}
+          <div className="flex-shrink-0">
+            <RightAnalysisPanel
+              coin={selectedCoin}
+              activeAISignal={activeAISignal}
+              longRatio={ratioData?.longRatio}
+              circuitBreaker={circuitBreakerState}
+              autoTradingEnabled={settings.autoTradingEnabled}
+              onJoinSignal={joinSignal}
+              userAsset={userStats.currentAsset}
+            />
+          </div>
+        </aside>
       </div>
 
-      <div className={`${hideSidebar ? 'hidden' : 'hidden lg:block'}`}>
+      {/* ── Footer ── */}
+      <div className="hidden lg:block">
         <Footer />
       </div>
 
-      <MobileStickyBar
-        totalPnL={aiStatsForPerformance.totalPnL}
-        winRate={aiStatsForPerformance.winRate}
-        activeSignals={activeSignalsCount}
-      />
+      {/* ── Floating: AI Mentor Chat ── */}
+      {mentorChatProps && <AIMentorChat {...mentorChatProps} />}
 
-      {selectedCoin && (
-        <AIMentorChat
-          symbol={selectedSymbol}
-          currentPrice={selectedCoin.price}
-          userAsset={userStats.currentAsset}
-          userPosition={activeUserPosition ? {
-            type: activeUserPosition.position,
-            entryPrice: activeUserPosition.entryPrice,
-            targetPrice: activeUserPosition.targetPrice,
-            stopLoss: activeUserPosition.stopLoss,
-            leverage: activeUserPosition.leverage,
-          } : undefined}
-          allPositions={positions.filter(p => p.status === 'ACTIVE').map(p => ({
-            symbol: p.symbol,
-            type: p.position,
-            entryPrice: p.entryPrice,
-            leverage: p.leverage,
-          }))}
-        />
-      )}
-
+      {/* ── Performance Modal ── */}
       <AnimatePresence>
         {isPerformanceOpen && (
           <PerformanceModal

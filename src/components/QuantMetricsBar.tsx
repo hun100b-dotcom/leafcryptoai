@@ -48,11 +48,12 @@ export function QuantMetricsBar({ metrics, compact = false }: QuantMetricsBarPro
 
   if (compact) {
     return (
-      <div className="flex items-center gap-3 overflow-x-auto scrollbar-thin py-1">
-        {items.map((item) => (
-          <div key={item.label} className="flex items-center gap-1 text-[10px] whitespace-nowrap">
+      <div className="flex items-center gap-4 overflow-x-auto scrollbar-thin">
+        {items.map((item, i) => (
+          <div key={item.label} className="flex items-center gap-1.5 text-xs whitespace-nowrap">
+            {i > 0 && <span className="text-muted-foreground/40">·</span>}
             <span className="text-muted-foreground">{item.label}</span>
-            <span className={cn("font-mono font-bold", item.color)}>{item.value}</span>
+            <span className={cn("font-mono font-semibold", item.color)}>{item.value}</span>
           </div>
         ))}
       </div>

@@ -75,11 +75,11 @@ export function SentimentGauge({ symbol, news, events = MAJOR_EVENTS }: Sentimen
   };
 
   return (
-    <div className="trading-card p-6">
+    <div className="trading-card p-5">
       <div className="flex items-center justify-between mb-4">
-        <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-2">
-          <Users className="w-4 h-4" />
-          인간지표 (Crowd Pulse) - {symbol}
+        <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-2">
+          <Users className="w-3.5 h-3.5" />
+          Crowd Pulse · {symbol}
         </h3>
         <button 
           onClick={refetch}

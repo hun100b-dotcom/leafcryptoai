@@ -31,7 +31,8 @@ const Positions = () => {
     updateInitialAsset,
     depositAsset,
     withdrawAsset,
-    calculateRealTimeStats
+    calculateRealTimeStats,
+    updateAutoTradingEnabled,
   } = useUserPositions();
 
   const { 
@@ -168,6 +169,7 @@ const Positions = () => {
             onDeposit={depositAsset}
             onWithdraw={withdrawAsset}
             onRefetch={handleRefetchAll}
+            onToggleAutoTrading={updateAutoTradingEnabled}
           />
 
           {/* Filters */}
